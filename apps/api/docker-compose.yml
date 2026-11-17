@@ -1,0 +1,48 @@
+name: savarigo
+
+# Database-only topology for day-to-day development. The production stack —
+# api, web and nginx in front of them — is declared in the repository-root
+# `docker-compose.yml`. This file exists so a contributor can get a schema-
+# correct Postgres with one command and no image builds.
+#
+#   docker compose up -d                    # postgres
+#   docker compose --profile tools up -d    # postgres + Adminer
+#
+# Compose interpolation reads `.env` next to this file, which is the same file
+# Prisma loads, so `POSTGRES_*` here and `DATABASE_URL` there cannot drift.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: savarigo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-savarigo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-savarigo}
+      POSTGRES_DB: ${POSTGRES_DB:-savarigo}
+    ports:
+      # Loopback by default: the previous build published 5432 on every
+      # interface, which is fine on a laptop and unacceptable on a VPS with a
+      # public IP. Set POSTGRES_HOST_BIND=0.0.0.0 to restore that deliberately.
+      - "${POSTGRES_HOST_BIND:-127.0.0.1}:5432:5432"
+    volumes:
+      - savarigo-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-savarigo} -d ${POSTGRES_DB:-savarigo}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  adminer:
+    image: adminer:4
+    container_name: savarigo-adminer
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+    profiles: ["tools"]
+
+volumes:
+  savarigo-pgdata:

@@ -1,0 +1,45 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development",
+      "env": {
+        "APP_VARIANT": "development"
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview",
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "autoIncrement": true
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://REPLACE-WITH-PREVIEW-API-HOST/api/v1"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://REPLACE-WITH-PRODUCTION-API-HOST/api/v1"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

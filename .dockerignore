@@ -1,0 +1,50 @@
+# The Docker builds copy the workspace in deliberately, stage by stage, so
+# anything not needed to compile has to stay out of the context — it is the
+# difference between a ~20 MB context and a multi-gigabyte one, and the
+# excluded paths are exactly the ones that hold secrets and local state.
+
+# Version control and CI (CI runs its own checkout, not a Docker context)
+.git
+.github
+
+# Dependencies are installed inside the image by `npm ci`.
+node_modules
+**/node_modules
+
+# Secrets and local state. Compose reads .env.production from the host with
+# --env-file, never from the image.
+.env
+.env.*
+.env.production
+apps/api/.env
+apps/api/.env.*
+apps/web/.env
+apps/web/.env.local
+apps/web/.env.*.local
+deploy/certbot
+
+# Build output: every image compiles from source, so a host artefact would only
+# mask a stale layer (or, worse, be copied into the runner stage).
+apps/api/dist
+apps/api/generated
+apps/web/.next
+.next
+out
+
+# Test, performance and backup scratch space.
+apps/api/.pgdata
+coverage
+**/coverage
+**/playwright-report
+apps/web/test-results
+apps/web/tests/.artifacts
+apps/web/tests/report
+apps/web/tests/.auth
+
+# Assets that are inputs to the design process, not to the build.
+vibe_images
+docs
+
+**/*.log
+**/.DS_Store
+**/Thumbs.db

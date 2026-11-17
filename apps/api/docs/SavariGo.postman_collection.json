@@ -1,0 +1,479 @@
+{
+  "info": {
+    "name": "SavariGo API (Phase 3)",
+    "description": "Auth, catalogue, bookings, Razorpay payments, reviews, notifications and admin. Set baseUrl and run Auth > Login first; tokens are stored automatically.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000/api/v1" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "email", "value": "rider@example.com" },
+    { "key": "password", "value": "SavariGo@2026" },
+    { "key": "otpCode", "value": "" },
+    { "key": "vehicleId", "value": "" },
+    { "key": "pickupLocationId", "value": "" },
+    { "key": "bookingId", "value": "" },
+    { "key": "couponCode", "value": "SAVARI100" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.verification && body.verification.devCode) {",
+                  "  pm.collectionVariables.set('otpCode', body.verification.devCode);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"fullName\": \"Karthik R\",\n  \"phone\": \"9876543210\",\n  \"city\": \"Puducherry\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/register"
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"purpose\": \"EMAIL_VERIFICATION\",\n  \"code\": \"{{otpCode}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/verify-otp"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.tokens) {",
+                  "  pm.collectionVariables.set('accessToken', body.tokens.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', body.tokens.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Refresh tokens",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.tokens) {",
+                  "  pm.collectionVariables.set('accessToken', body.tokens.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', body.tokens.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/refresh"
+          }
+        },
+        {
+          "name": "My profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/users/me"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/logout"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalogue",
+      "item": [
+        {
+          "name": "List vehicles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.length) {",
+                  "  pm.collectionVariables.set('vehicleId', body.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/vehicles?category=scooter&sort=price_asc"
+          }
+        },
+        {
+          "name": "Vehicle detail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/vehicles/{{vehicleId}}"
+          }
+        },
+        {
+          "name": "Availability",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/vehicles/{{vehicleId}}/availability"
+          }
+        },
+        {
+          "name": "Locations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const list = Array.isArray(body) ? body : body.data;",
+                  "if (list && list.length) {",
+                  "  pm.collectionVariables.set('pickupLocationId', list[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": { "method": "GET", "url": "{{baseUrl}}/locations" }
+        },
+        {
+          "name": "Validate coupon",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{couponCode}}\",\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"durationDays\": 3\n}"
+            },
+            "url": "{{baseUrl}}/coupons/validate"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Quote",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"pickupLocationId\": \"{{pickupLocationId}}\",\n  \"pickupAt\": \"2026-12-01T09:00:00+05:30\",\n  \"returnAt\": \"2026-12-04T09:00:00+05:30\",\n  \"addOns\": [\"HELMET\", \"INSURANCE\"]\n}"
+            },
+            "url": "{{baseUrl}}/bookings/quote"
+          }
+        },
+        {
+          "name": "Create booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.id) { pm.collectionVariables.set('bookingId', body.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"pickupLocationId\": \"{{pickupLocationId}}\",\n  \"pickupAt\": \"2026-12-01T09:00:00+05:30\",\n  \"returnAt\": \"2026-12-04T09:00:00+05:30\",\n  \"couponCode\": \"{{couponCode}}\",\n  \"addOns\": [\"HELMET\", \"INSURANCE\"]\n}"
+            },
+            "url": "{{baseUrl}}/bookings"
+          }
+        },
+        {
+          "name": "My bookings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/bookings/me"
+          }
+        },
+        {
+          "name": "Booking detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/bookings/me/{{bookingId}}"
+          }
+        },
+        {
+          "name": "Cancel booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Plans changed\"\n}"
+            },
+            "url": "{{baseUrl}}/bookings/{{bookingId}}/cancel"
+          }
+        },
+        {
+          "name": "Update status (staff)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ONGOING\",\n  \"note\": \"Keys handed over\"\n}"
+            },
+            "url": "{{baseUrl}}/bookings/{{bookingId}}/status"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Create order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"{{bookingId}}\",\n  \"idempotencyKey\": \"order-{{bookingId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/payments/orders"
+          }
+        },
+        {
+          "name": "Verify checkout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpayOrderId\": \"order_xxx\",\n  \"razorpayPaymentId\": \"pay_xxx\",\n  \"razorpaySignature\": \"hmac\"\n}"
+            },
+            "url": "{{baseUrl}}/payments/verify"
+          }
+        },
+        {
+          "name": "Payment history",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/payments"
+          }
+        },
+        {
+          "name": "Refund (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Goodwill refund\"\n}"
+            },
+            "url": "{{baseUrl}}/payments/{{bookingId}}/refund"
+          }
+        },
+        {
+          "name": "Webhook (Razorpay)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-razorpay-signature", "value": "{{razorpaySignature}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"payment.captured\",\n  \"payload\": {\n    \"payment\": {\n      \"entity\": {\n        \"id\": \"pay_xxx\",\n        \"order_id\": \"order_xxx\",\n        \"amount\": 10000,\n        \"status\": \"captured\",\n        \"method\": \"upi\"\n      }\n    }\n  }\n}"
+            },
+            "url": "{{baseUrl}}/payments/webhook"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reviews and notifications",
+      "item": [
+        {
+          "name": "Vehicle reviews",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reviews/vehicle/{{vehicleId}}?sort=recent"
+          }
+        },
+        {
+          "name": "Create review",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"{{bookingId}}\",\n  \"rating\": 5,\n  \"title\": \"Great ride\",\n  \"comment\": \"Clean vehicle and a smooth handover.\"\n}"
+            },
+            "url": "{{baseUrl}}/reviews"
+          }
+        },
+        {
+          "name": "Notifications",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/notifications?unread=true"
+          }
+        },
+        {
+          "name": "Mark all read",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/notifications/read-all"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Overview",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/admin/overview"
+          }
+        },
+        {
+          "name": "Audit logs",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/admin/audit-logs?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Settings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/admin/settings"
+          }
+        },
+        {
+          "name": "Update setting",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": { \"supportPhone\": \"+91 90000 00000\" },\n  \"description\": \"Support contact shown on the website\"\n}"
+            },
+            "url": "{{baseUrl}}/admin/settings/support.contact"
+          }
+        },
+        {
+          "name": "Roles",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/admin/roles"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,306 @@
+name: Deploy
+
+# Publishing is split from CI on purpose: ci.yml proves the code, this workflow
+# moves it. Both halves are gated on secrets that only exist once a host (or a
+# Vercel project) has been provisioned, so the file can be committed before
+# there is anywhere to deploy and the run reports "not configured" instead of
+# failing.
+#
+# Required repository secrets (Settings → Secrets and variables → Actions):
+#
+#   Single VPS, reached over SSH:
+#     DEPLOY_HOST        host or IP nginx serves
+#     DEPLOY_USER        ssh user that owns the checkout
+#     DEPLOY_SSH_KEY     private key whose public half is in authorized_keys
+#     DEPLOY_PATH        absolute path of the repository checkout on that host
+#   Website on Vercel:
+#     VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID — the last two are what
+#     `vercel link --repo` records at the repository root, and what a CI run
+#     passes instead of keeping a `.vercel` directory in the checkout
+#
+# And one repository *variable*, because it is not a secret and the browser
+# bundle needs it at build time:
+#
+#   WEB_ORIGIN           https://savarigo.example.com, the same value the
+#                        Compose stack interpolates from .env.production
+#
+# Images are published to GHCR under this repository owner. Either set both
+# packages public or leave the host signed in to ghcr.io: the release script
+# never logs in, so a private package with an expired token fails at `pull`,
+# which happens before any container is replaced.
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  # Never cancel a release half-way through: a stack where nginx serves the old
+  # website against the new API is the one state this workflow must not create
+  # by accident.
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: Check what is configured
+    runs-on: ubuntu-latest
+    outputs:
+      compose: ${{ steps.read.outputs.compose }}
+      vercel: ${{ steps.read.outputs.vercel }}
+      tag: ${{ steps.read.outputs.tag }}
+      api_image: ${{ steps.read.outputs.api_image }}
+      web_image: ${{ steps.read.outputs.web_image }}
+      web_origin: ${{ steps.read.outputs.web_origin }}
+    steps:
+      - name: Read configuration and choose an image tag
+        id: read
+        # Secrets are mapped to environment variables first so their values are
+        # masked in the log; a secret is only ever tested for emptiness, never
+        # echoed. WEB_ORIGIN is a repository variable and public, so it is
+        # passed on to the jobs that build the images.
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          WEB_ORIGIN: ${{ vars.WEB_ORIGIN }}
+        run: |
+          set -euo pipefail
+
+          compose=false
+          if [ -n "$DEPLOY_HOST" ] && [ -n "$DEPLOY_USER" ] &&
+             [ -n "$DEPLOY_SSH_KEY" ] && [ -n "$DEPLOY_PATH" ]; then
+            compose=true
+          fi
+
+          # WEB_ORIGIN is inlined into the browser bundle, so a VPS release with
+          # the variable missing would publish an image pointing at nothing.
+          if [ "$compose" = true ] && [ -z "$WEB_ORIGIN" ]; then
+            echo "::error::Repository variable WEB_ORIGIN is not set, so the website image would be built pointing at nothing."
+            exit 1
+          fi
+
+          vercel=false
+          if [ -n "$VERCEL_TOKEN" ]; then
+            vercel=true
+          fi
+
+          # A tag push releases that tag; a manual run releases the commit it was
+          # started from, which is how a hotfix gets out without pretending to be
+          # a release. Docker tags must be lowercase.
+          tag="$(printf '%s' "$GITHUB_REF_NAME" | tr '[:upper:]' '[:lower:]')"
+          if [ "$GITHUB_EVENT_NAME" != "push" ]; then
+            tag="sha-$(printf '%s' "$GITHUB_SHA" | cut -c1-12)"
+          fi
+
+          # Registry paths must be lowercase and an account login is not always,
+          # so both names are assembled once here and reused by every later job.
+          owner="$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')"
+          {
+            echo "compose=$compose"
+            echo "vercel=$vercel"
+            echo "tag=$tag"
+            echo "api_image=ghcr.io/$owner/savarigo-api"
+            echo "web_image=ghcr.io/$owner/savarigo-web"
+            echo "web_origin=$WEB_ORIGIN"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### Release \`$tag\`"
+            echo
+            echo "| Target | Configured |"
+            echo "| --- | --- |"
+            echo "| Compose host | \`$compose\` |"
+            echo "| Vercel | \`$vercel\` |"
+            echo
+            if [ "$compose" = false ] && [ "$vercel" = false ]; then
+              echo "Nothing is configured yet: set the four \`DEPLOY_*\` secrets for a VPS"
+              echo "release, or \`VERCEL_TOKEN\` for a website release."
+            elif [ "$compose" = false ]; then
+              echo "The VPS half is skipped because one of the \`DEPLOY_*\` secrets is unset."
+            elif [ "$vercel" = false ]; then
+              echo "Vercel is skipped because \`VERCEL_TOKEN\` is unset."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  images:
+    name: Build and publish images
+    needs: probe
+    if: needs.probe.outputs.compose == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: api
+            dockerfile: apps/api/Dockerfile
+            image: ${{ needs.probe.outputs.api_image }}
+            # The API image reads its configuration from the environment at
+            # runtime, so it has no build-time values to name.
+            build_args: ""
+          - target: web
+            dockerfile: apps/web/Dockerfile
+            image: ${{ needs.probe.outputs.web_image }}
+            # NEXT_PUBLIC_API_URL is inlined into the browser bundle and widens
+            # CSP connect-src at build time; API_URL only has to be reachable
+            # from inside the stack, so it stays a container-network address.
+            build_args: |
+              NEXT_PUBLIC_API_URL=${{ needs.probe.outputs.web_origin }}/api/v1
+              API_URL=http://api:4000/api/v1
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Sign in to the registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          # Enough to push packages for this repository. A host that must only
+          # pull them needs its own read-only PAT.
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute tags
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ matrix.image }}
+          tags: |
+            type=raw,value=${{ needs.probe.outputs.tag }}
+            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          # The runner is amd64, and the website image resolves the Linux sharp
+          # binary for that architecture. An arm host must build its own images.
+          platforms: linux/amd64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: ${{ matrix.build_args }}
+          cache-from: type=gha,scope=${{ matrix.target }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.target }}
+
+  compose-host:
+    name: Release to the VPS
+    needs: [probe, images]
+    if: needs.probe.outputs.compose == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Install the deploy key
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          set -euo pipefail
+          mkdir -p -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          # Recorded once per run and then required (`StrictHostKeyChecking=yes`
+          # below), so a host that changed its key stops the release instead of
+          # the pipeline silently trusting whoever answers port 22.
+          ssh-keyscan -T 10 "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Pull, migrate, restart, verify
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          RELEASE_TAG: ${{ needs.probe.outputs.tag }}
+          API_IMAGE: ${{ needs.probe.outputs.api_image }}
+          WEB_IMAGE: ${{ needs.probe.outputs.web_image }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "env DEPLOY_PATH='$DEPLOY_PATH' RELEASE_TAG='$RELEASE_TAG' \
+             API_IMAGE='$API_IMAGE' WEB_IMAGE='$WEB_IMAGE' \
+             bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd "$DEPLOY_PATH"
+
+          # DOMAIN and the database credentials live in .env.production on the
+          # host; sourcing it here is how the health check learns the origin.
+          set -a
+          . ./.env.production
+          set +a
+
+          # Exported shell variables outrank --env-file in Compose
+          # interpolation, which is how a release pins the tag without editing
+          # the file on the box.
+          export API_TAG="$RELEASE_TAG" WEB_TAG="$RELEASE_TAG"
+
+          # Pull before `up`: with a build section present, Compose would
+          # otherwise compile a missing image from source on a host that is not
+          # meant to compile anything.
+          docker compose --env-file .env.production pull api web
+
+          # Migrations first, while the previous API is still serving traffic.
+          docker compose --env-file .env.production run --rm migrate
+
+          docker compose --env-file .env.production up -d
+
+          # nginx is the last service to start and the only one with a public
+          # port, so this answers only if the whole chain came back.
+          curl --fail --silent --show-error --retry 12 --retry-delay 5 \
+            --retry-all-errors "https://$DOMAIN/api/v1/health"
+          curl --fail --silent --show-error --retry 6 --retry-delay 5 \
+            --retry-all-errors -o /dev/null -w 'site %{http_code}\n' "https://$DOMAIN/"
+
+          docker compose --env-file .env.production ps
+          echo "Released $RELEASE_TAG."
+          echo "Rollback: docker compose --env-file .env.production up -d api web" \
+            "with API_TAG=<previous> WEB_TAG=<previous>"
+          REMOTE
+
+  vercel:
+    name: Release website to Vercel
+    needs: probe
+    if: needs.probe.outputs.vercel == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - uses: actions/checkout@v7
+
+      # Neither `npm ci` nor a build step: the CLI uploads the source and Vercel
+      # installs from the root lockfile and builds the project's Root Directory
+      # (apps/web), which is the same build ci.yml's web job proves from scratch.
+      # Installing here would only add node_modules to the upload.
+      #
+      # The command therefore runs at the repository root rather than inside
+      # apps/web — Vercel's monorepo guidance is explicit that the CLI must not
+      # be invoked from a workspace subdirectory, because the workspace install
+      # needs the lockfile at the root.
+      #
+      # `--prod` only for tag pushes: a manual run leaves a preview URL that
+      # exercises the same build without replacing the live site.
+      - name: Deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          PROD_FLAG=""
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            PROD_FLAG="--prod"
+          fi
+          # Unquoted on purpose: empty means no argument at all.
+          npx --yes vercel@65 deploy --non-interactive $PROD_FLAG \
+            --token "$VERCEL_TOKEN"

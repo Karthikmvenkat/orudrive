@@ -1,0 +1,339 @@
+%% SavariGo entity relationship diagram (PostgreSQL / Prisma)
+%% Render with: npx @mermaid-js/mermaid-cli -i docs/erd.mmd -o docs/erd.svg
+%% or paste into https://mermaid.live
+
+erDiagram
+    users ||--o| customer_profiles : "has"
+    users ||--o| driver_profiles : "has"
+    users ||--o{ user_roles : "assigned"
+    roles ||--o{ user_roles : "granted through"
+    roles ||--o{ role_permissions : "contains"
+    permissions ||--o{ role_permissions : "granted by"
+    users ||--o{ vehicles : "owns"
+    users ||--o{ bookings : "places"
+    users ||--o{ reviews : "writes"
+    users ||--o{ notifications : "receives"
+    users ||--o{ addresses : "saves"
+    users ||--o{ audit_logs : "acts in"
+    users ||--o{ admin_settings : "last updated"
+
+    vehicle_categories ||--o{ vehicles : "classifies"
+    vehicle_locations ||--o{ vehicles : "hubs"
+    vehicle_locations ||--o{ bookings : "pickup"
+    vehicle_locations ||--o{ bookings : "drop (optional)"
+
+    vehicles ||--o{ vehicle_images : "has"
+    vehicles ||--o{ vehicle_availability : "calendar"
+    vehicles ||--o{ pricing : "rate plans"
+    vehicles ||--o{ bookings : "rented in"
+    vehicles ||--o{ reviews : "rated by"
+
+    bookings ||--o{ booking_items : "line items"
+    bookings ||--o{ payments : "paid by"
+    bookings ||--o{ vehicle_availability : "reserves"
+    bookings ||--o| reviews : "reviewed by"
+    bookings }o--o| coupons : "redeems"
+
+    payments ||--o{ refunds : "refunded by"
+
+    coupons ||--o{ coupon_categories : "applies to"
+    vehicle_categories ||--o{ coupon_categories : "eligible"
+
+    users {
+        uuid id PK
+        string email UK
+        string phone UK "nullable"
+        string passwordHash "scrypt$salt$hash"
+        enum status "PENDING_VERIFICATION|ACTIVE|SUSPENDED|DELETED"
+        datetime emailVerifiedAt
+        datetime phoneVerifiedAt
+        datetime lastLoginAt
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    roles {
+        uuid id PK
+        string name UK "CUSTOMER|DRIVER|VENDOR|SUPPORT|ADMIN"
+        string description
+        boolean isSystem
+    }
+
+    permissions {
+        uuid id PK
+        string key UK "e.g. booking:read"
+        string group
+        string description
+    }
+
+    user_roles {
+        uuid userId PK,FK
+        uuid roleId PK,FK
+        datetime assignedAt
+    }
+
+    role_permissions {
+        uuid roleId PK,FK
+        uuid permissionId PK,FK
+    }
+
+    customer_profiles {
+        uuid id PK
+        uuid userId UK,FK
+        string fullName
+        date dateOfBirth
+        string licenceNumber
+        date licenceExpiry
+        datetime licenceVerifiedAt
+        string avatarUrl
+        string city
+        json preferences
+    }
+
+    driver_profiles {
+        uuid id PK
+        uuid userId UK,FK
+        string fullName
+        string licenceNumber UK
+        date licenceExpiry
+        int experienceYears
+        string_array languages
+        enum verificationStatus
+        decimal rating "3,2"
+        int totalTrips
+        decimal hourlyRate "10,2"
+        decimal dailyRate "10,2"
+        boolean isAvailable
+    }
+
+    vehicle_categories {
+        uuid id PK
+        string slug UK
+        string name
+        string tagline
+        string description
+        string imageUrl
+        int sortOrder
+        boolean isActive
+    }
+
+    vehicle_locations {
+        uuid id PK
+        string slug UK
+        string name
+        string addressLine1
+        string addressLine2
+        string city
+        string state
+        string postalCode
+        decimal latitude "9,6"
+        decimal longitude "9,6"
+        string phone
+        string opensAt
+        string closesAt
+        boolean isActive
+    }
+
+    vehicles {
+        uuid id PK
+        string slug UK
+        string name
+        string brand
+        uuid categoryId FK
+        uuid ownerId FK
+        uuid locationId FK
+        string registrationNumber UK
+        int year
+        enum transmission
+        enum fuelType
+        int seats
+        string engine
+        string mileage
+        string description
+        enum status "DRAFT|AVAILABLE|UNAVAILABLE|MAINTENANCE|RETIRED"
+        decimal rating "3,2"
+        int reviewCount
+        boolean popular
+        int mileageLimitKm
+        decimal depositAmount "12,2"
+    }
+
+    vehicle_images {
+        uuid id PK
+        uuid vehicleId FK
+        string url
+        string alt
+        int sortOrder
+        boolean isPrimary "one per vehicle"
+    }
+
+    vehicle_availability {
+        uuid id PK
+        uuid vehicleId FK
+        uuid bookingId FK "nullable"
+        datetime startsAt
+        datetime endsAt
+        enum status "AVAILABLE|BLOCKED|BOOKED|MAINTENANCE"
+        string note
+    }
+
+    pricing {
+        uuid id PK
+        uuid vehicleId FK
+        string name
+        decimal baseDayRate "12,2"
+        decimal extraKmRate "10,2"
+        decimal depositAmount "12,2"
+        int mileageLimitKm
+        int minDays
+        decimal weeklyDiscountPercent "5,2"
+        decimal monthlyDiscountPercent "5,2"
+        string currency "INR"
+        datetime validFrom
+        datetime validTo
+        boolean isActive
+    }
+
+    bookings {
+        uuid id PK
+        string code UK "e.g. SVR8842"
+        uuid customerId FK
+        uuid vehicleId FK
+        uuid pickupLocationId FK
+        uuid dropLocationId FK "nullable"
+        uuid couponId FK "nullable"
+        datetime pickupAt
+        datetime returnAt
+        int durationDays
+        enum status "PENDING|CONFIRMED|ONGOING|COMPLETED|CANCELLED|NO_SHOW"
+        enum paymentStatus "PENDING|PAID|REFUNDED|PARTIALLY_REFUNDED|FAILED"
+        decimal rentalAmount "12,2"
+        decimal extrasAmount "12,2"
+        decimal taxAmount "12,2"
+        decimal depositAmount "12,2"
+        decimal discountAmount "12,2"
+        decimal totalAmount "12,2"
+        string currency "INR"
+        string specialRequests
+        datetime cancelledAt
+        string cancellationReason
+    }
+
+    booking_items {
+        uuid id PK
+        uuid bookingId FK
+        enum kind "VEHICLE_RENTAL|DELIVERY|HELMET|DRIVER|INSURANCE|OTHER"
+        string label
+        int quantity
+        decimal unitAmount "12,2"
+        decimal totalAmount "12,2"
+        json metadata
+    }
+
+    payments {
+        uuid id PK
+        uuid bookingId FK
+        enum provider "RAZORPAY|UPI|CASH|WALLET"
+        enum method "UPI|CARD|NETBANKING|WALLET|CASH"
+        decimal amount "12,2"
+        string currency "INR"
+        enum status "PENDING|PAID|REFUNDED|PARTIALLY_REFUNDED|FAILED"
+        string providerOrderId UK "opaque gateway id"
+        string providerPaymentId UK "opaque gateway id"
+        string idempotencyKey UK
+        string failureCode
+        string failureMessage
+        datetime paidAt
+    }
+
+    refunds {
+        uuid id PK
+        uuid paymentId FK
+        decimal amount "12,2"
+        string reason
+        enum status "PENDING|PROCESSING|COMPLETED|FAILED"
+        string providerRefundId UK
+        datetime processedAt
+    }
+
+    coupons {
+        uuid id PK
+        string code UK
+        string title
+        string description
+        enum type "PERCENT|FLAT"
+        decimal value "10,2"
+        decimal maxDiscount "10,2"
+        decimal minOrderAmount "10,2"
+        datetime validFrom
+        datetime validTill
+        int usageLimit
+        int perUserLimit
+        int usedCount
+        boolean isActive
+    }
+
+    coupon_categories {
+        uuid couponId PK,FK
+        uuid categoryId PK,FK
+    }
+
+    reviews {
+        uuid id PK
+        uuid bookingId UK,FK
+        uuid vehicleId FK
+        uuid customerId FK
+        int rating "1..5"
+        string title
+        string comment
+        boolean isPublished
+    }
+
+    notifications {
+        uuid id PK
+        uuid userId FK
+        enum type
+        enum channel "IN_APP|EMAIL|SMS|WHATSAPP"
+        string title
+        string body
+        enum status "QUEUED|SENT|READ|FAILED"
+        datetime readAt
+        datetime sentAt
+        json metadata
+    }
+
+    addresses {
+        uuid id PK
+        uuid userId FK
+        string label
+        string line1
+        string line2
+        string city
+        string state
+        string postalCode
+        string country
+        decimal latitude "9,6"
+        decimal longitude "9,6"
+        boolean isDefault "one per user"
+    }
+
+    admin_settings {
+        uuid id PK
+        string key UK
+        json value
+        string description
+        uuid updatedById FK
+    }
+
+    audit_logs {
+        uuid id PK
+        uuid actorId FK "nullable"
+        string action
+        string entityType
+        string entityId
+        json before
+        json after
+        string ipAddress
+        string userAgent
+        datetime createdAt
+    }

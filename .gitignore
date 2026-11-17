@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Environment — never commit secrets
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+!.env.example
+
+# TLS material bind-mounted into nginx: privkeys live in certbot/conf once
+# certbot runs, and www accumulates challenge files.
+deploy/certbot/conf/*
+deploy/certbot/www/*
+!deploy/certbot/conf/.gitkeep
+!deploy/certbot/www/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# Test and coverage
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Editor and OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Prisma generated client
+apps/api/generated/
+
+# Local embedded PostgreSQL cluster
+apps/api/.pgdata/
+
+# Local scratch: UI reference exports, walk scripts, service logs
+.scratch/

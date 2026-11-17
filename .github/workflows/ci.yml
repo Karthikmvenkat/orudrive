@@ -1,0 +1,242 @@
+name: CI
+
+# Everything here reproduces a flow that already works on a development
+# machine, because those are the commands the suites were written against:
+#   - the API suite is Jest unit + e2e specs against a real PostgreSQL 16
+#     (test/setup-env.ts points DATABASE_URL at savari_test),
+#   - Playwright boots the API and Next.js itself (playwright.config.ts
+#     `webServer`, and `reuseExistingServer` is off in CI),
+#   - the mobile job's `expo export` is the same command the workspace's
+#     `export:android` / `export:ios` scripts run locally,
+#   - the images are built from the repository root, the same context the
+#     production Compose file uses.
+# Performance scripts (`npm run perf:api`, `perf:weight`) are deliberately not
+# here: they measure a machine, so their numbers would turn a green pipeline red
+# on a shared runner. Run them locally and record them in
+# docs/performance-baseline.md.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "24"
+  # The credentials and database name baked into apps/api/test/setup-env.ts and
+  # apps/web/playwright.config.ts, so no test has to be told where its database
+  # is: CI matches the defaults instead of inventing a third way to configure it.
+  DATABASE_URL: postgresql://savarigo:savarigo@127.0.0.1:5432/savari_test?schema=public
+  TEST_DATABASE_URL: postgresql://savarigo:savarigo@127.0.0.1:5432/savari_test?schema=public
+
+jobs:
+  api:
+    name: API — typecheck, unit and e2e specs
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: savarigo
+          POSTGRES_PASSWORD: savarigo
+          POSTGRES_DB: savari_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U savarigo -d savari_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run db:generate --workspace=api
+
+      # `migrate deploy` rather than `db push`: the initial migration ends with
+      # hand-written DDL (btree_gist and the GiST exclusion constraint that makes
+      # overlapping bookings impossible), and the CI database has to have it or
+      # the booking-conflict specs prove nothing.
+      - name: Apply migrations
+        run: npm run db:deploy --workspace=api
+
+      # Several specs assert against the seeded fleet, coupons and locations,
+      # which is also how the suite is developed locally.
+      - name: Seed test database
+        run: npm run db:seed --workspace=api
+
+      - name: Typecheck
+        run: npm run typecheck --workspace=api
+
+      # --runInBand is in the workspace script already: the throttler budget and
+      # the availability constraints are shared state, so parallel workers fight
+      # over them.
+      - name: Test
+        run: npm test --workspace=api
+
+  web:
+    name: Web — lint and production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint --workspace=web
+
+      # No API is reachable here and that is the point: `next build` has to
+      # succeed on its own, because that is what the container build does.
+      - name: Build
+        run: npm run build --workspace=web
+
+  mobile:
+    name: Mobile — typecheck, lint, specs and Expo bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck --workspace=mobile
+
+      - name: Lint
+        run: npm run lint --workspace=mobile
+
+      # Jest with the jest-expo preset: no device, no API. The specs cover origin
+      # derivation, the single-flight refresh rotation and the rental window.
+      - name: Test
+        run: npm test --workspace=mobile
+
+      # `expo export` is the stand-in for a device build: it runs the real Metro
+      # bundler over every route and fails on an unresolvable import, without an
+      # EAS login, a simulator or a signing certificate. No EXPO_PUBLIC_* values
+      # are set, which is also the point — the origins are resolved lazily on
+      # first use, so a bundle that never calls the API must still build.
+      - name: Bundle for both platforms
+        run: |
+          npm run export:android --workspace=mobile
+          npm run export:ios --workspace=mobile
+
+  e2e:
+    name: End-to-end — Playwright against the real API
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    needs: [api, web]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: savarigo
+          POSTGRES_PASSWORD: savarigo
+          POSTGRES_DB: savari_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U savarigo -d savari_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Generate Prisma client
+        run: npm run db:generate --workspace=api
+
+      - name: Migrate and seed
+        run: |
+          npm run db:deploy --workspace=api
+          npm run db:seed --workspace=api
+
+      # playwright.config.ts starts `nest start` on 4100 and `next dev` on 3001
+      # and waits for both health checks, so nothing here has to be pre-served.
+      - name: Run Playwright
+        working-directory: apps/web
+        run: npx playwright test
+
+      - name: Upload report and traces
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            apps/web/tests/report
+            apps/web/test-results
+          retention-days: 7
+
+  images:
+    name: Images — build both Dockerfiles
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: savarigo/api
+            dockerfile: apps/api/Dockerfile
+          - image: savarigo/web
+            dockerfile: apps/web/Dockerfile
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      # Pushing belongs to deploy.yml; this job only proves the Dockerfile
+      # builds, including the layer that installs the Linux sharp binary the
+      # Windows-generated lockfile cannot carry. No build args are passed: the
+      # website image inlines NEXT_PUBLIC_API_URL into the browser bundle and
+      # widens CSP `connect-src` with its origin, and a CI image has no public
+      # origin to name. Leaving it unset keeps `connect-src 'self'`, which is
+      # exactly what the shipped site needs — every browser request goes
+      # through the same-origin BFF under /api, never to the API host.
+      - name: Build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: false
+          tags: ${{ matrix.image }}:ci
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}

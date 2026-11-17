@@ -1,0 +1,168 @@
+name: savarigo-stack
+
+# Production topology for a single VPS. Nothing except nginx is reachable from
+# the internet: the database, the API and Next.js sit on the internal Compose
+# network, and every port that is published is published on the host loopback so
+# `curl` diagnostics and the backup job still work.
+#
+#   docker compose --env-file .env.production build
+#   docker compose --env-file .env.production run --rm migrate
+#   docker compose --env-file .env.production up -d
+#   docker compose --env-file .env.production ps
+#
+# The project is deliberately separate from `apps/api/docker-compose.yml`
+# (development Postgres): images, containers, network and the data volume all
+# carry the `savarigo-stack` prefix, so a production database can never be
+# opened by the development stack by accident.
+#
+# `.env.production` feeds Compose interpolation only — see the template at
+# `.env.production.example`. Variables are mapped explicitly into each
+# container below instead of inheriting the whole file, which keeps it obvious
+# which secret reaches which process.
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    logging: *default-logging
+
+  # One-shot: applies pending migrations before any long-running process starts,
+  # so the API never needs DDL rights on the production database. It runs
+  # `prisma migrate deploy` rather than `db push` because the hand-written
+  # integrity DDL at the end of the initial migration — btree_gist plus the GiST
+  # exclusion constraint that stops two riders booking one vehicle on overlap —
+  # is something `db push` cannot reproduce, and silently losing it would weaken
+  # the most important guarantee in the system.
+  migrate:
+    image: ${API_IMAGE:-savarigo/api}:${API_TAG:-0.3.0}
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: "no"
+    working_dir: /app/apps/api
+    command: ["/app/node_modules/.bin/prisma", "migrate", "deploy"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging: *default-logging
+
+  api:
+    image: ${API_IMAGE:-savarigo/api}:${API_TAG:-0.3.0}
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      CORS_ORIGINS: ${WEB_ORIGIN:?WEB_ORIGIN is required, e.g. https://savarigo.example.com}
+      # nginx is the only hop in front of the API, so exactly one proxy is
+      # trusted when the API derives the client IP for rate limiting. A larger
+      # value lets any client spoof X-Forwarded-For and dodge the throttle.
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
+      THROTTLE_LIMIT: ${THROTTLE_LIMIT:-120}
+      THROTTLE_TTL_MS: ${THROTTLE_TTL_MS:-60000}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET is required (32+ characters)}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required (32+ characters)}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-30d}
+      OTP_SECRET: ${OTP_SECRET:?OTP_SECRET is required}
+      # Never enable in production: it returns the OTP in the API response.
+      AUTH_DEBUG_OTP: "false"
+      BOOKING_TAX_PERCENT: ${BOOKING_TAX_PERCENT:-5}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-razorpay}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-SavariGo <no-reply@localhost>}
+    ports:
+      - "127.0.0.1:${API_HOST_PORT:-4100}:4000"
+    logging: *default-logging
+
+  web:
+    image: ${WEB_IMAGE:-savarigo/web}:${WEB_TAG:-0.1.0}
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Baked into the browser bundle at build time, so it must be the origin
+        # a visitor's browser can reach.
+        NEXT_PUBLIC_API_URL: ${WEB_ORIGIN:?WEB_ORIGIN is required}/api/v1
+        # Read by the server process only, and only ever needs to be reachable
+        # from this container.
+        API_URL: http://api:4000/api/v1
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      API_URL: http://api:4000/api/v1
+      NEXT_PUBLIC_API_URL: ${WEB_ORIGIN}/api/v1
+      # The session cookie is httpOnly; `Secure` is only correct once nginx is
+      # serving TLS, which it does by default. Set to false for an http-only
+      # staging box or the login flow silently drops the cookie.
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+    ports:
+      - "127.0.0.1:${WEB_HOST_PORT:-3100}:3000"
+    logging: *default-logging
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # The stock entrypoint runs envsubst over /etc/nginx/templates with the
+      # variables defined here, so DOMAIN is the only thing substituted into the
+      # config and nginx's own $host / $remote_addr stay intact.
+      DOMAIN: ${DOMAIN:?DOMAIN is required, e.g. savarigo.example.com}
+    volumes:
+      - ./deploy/nginx/savarigo.conf.template:/etc/nginx/templates/default.conf.template:ro
+      # Read-only here; certbot writes them from the host. Create both
+      # directories before the first `up` (deploy/README.md).
+      - ${CERTBOT_CONF_DIR:-./deploy/certbot/conf}:/etc/letsencrypt:ro
+      - ${CERTBOT_WWW_DIR:-./deploy/certbot/www}:/var/www/certbot:ro
+    logging: *default-logging
+
+volumes:
+  pgdata:

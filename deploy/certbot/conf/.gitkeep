@@ -1,0 +1,2 @@
+# Certbot writes the live certificate here; the directory has to exist
+# before docker-compose binds it read-only into the nginx container.
