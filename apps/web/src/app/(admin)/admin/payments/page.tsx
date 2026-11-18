@@ -298,7 +298,7 @@ export default async function AdminPaymentsPage({
             })}
           </AdminTable>
           <p className="border-t border-line px-5 py-3 text-[11.5px] leading-relaxed text-muted">
-            SavariGo records payments, refunds and each partner's commission rate, then recalculates
+            SavariGo records payments, refunds and each partner&apos;s commission rate, then recalculates
             the payout from them on every load. There is no payout ledger in this database, so a
             transfer cannot be marked as sent here — settle it in your banking system and treat the
             figures above as the amount owed.
