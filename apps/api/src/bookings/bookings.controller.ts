@@ -102,6 +102,7 @@ export class BookingsController {
   }
 
   @Post(":id/cancel")
+  @Roles(ROLES.CUSTOMER, ROLES.VENDOR, ROLES.ADMIN, ROLES.SUPPORT)
   @ApiOperation({ summary: "Cancel a booking and calculate the refund" })
   cancel(
     @CurrentUser() actor: AuthUser,

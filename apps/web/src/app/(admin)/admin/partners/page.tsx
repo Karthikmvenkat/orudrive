@@ -275,8 +275,16 @@ function NewPartnerForm({ cities }: { cities: string[] }) {
         <Field label="Phone">
           <input name="phone" placeholder="+91 98400 00000" className={adminInput} />
         </Field>
-        <Field label="GSTIN" hint="15 characters, optional">
-          <input name="gstin" maxLength={15} className={adminInput} />
+        <Field label="GSTIN" hint="15 characters, required and unique per partner">
+          <input
+            name="gstin"
+            required
+            maxLength={15}
+            pattern="[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{3}"
+            title="Two digits, five letters, four digits, one letter, three alphanumerics — use capitals."
+            placeholder="33ABCDE1234F1Z5"
+            className={adminInput}
+          />
         </Field>
         <Field label="City">
           <select name="city" defaultValue="Puducherry" className={adminInput}>

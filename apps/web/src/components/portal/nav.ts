@@ -129,6 +129,6 @@ export const PARTNER_TITLES: Record<string, string> = {
   "/partner/profile": "Profile & Settings",
 };
 
-export const PARTNER_SECONDARY_LINKS: PortalNavLink[] = [
-  { label: "Master Admin portal", href: "/admin", icon: "UserCog" },
-];
+// Partners get no secondary links: the Master Admin portal is reachable by role,
+// so advertising it here only invites a dead-end redirect.
+export const PARTNER_SECONDARY_LINKS: PortalNavLink[] = [];

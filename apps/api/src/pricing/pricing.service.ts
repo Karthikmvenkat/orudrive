@@ -6,12 +6,16 @@ import {
 } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { PartnerGateService } from "../common/services/partner-gate.service";
 import type { AuthUser } from "../common/decorators/current-user.decorator";
 import { CreatePricingDto, UpdatePricingDto } from "./pricing.dto";
 
 @Injectable()
 export class PricingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly partnerGate: PartnerGateService,
+  ) {}
 
   private serialize(plan: {
     id: string;
@@ -77,6 +81,7 @@ export class PricingService {
         code: "VEHICLE_FORBIDDEN",
       });
     }
+    await this.partnerGate.assertOwnerApproved(vehicle.ownerId);
   }
 
   private assertWindow(validFrom?: Date, validTo?: Date | null) {

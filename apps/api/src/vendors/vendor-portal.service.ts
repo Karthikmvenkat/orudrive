@@ -107,7 +107,6 @@ export class VendorPortalService {
         ...(dto.addressLine1 !== undefined
           ? { addressLine1: dto.addressLine1 }
           : {}),
-        ...(dto.gstin !== undefined ? { gstin: dto.gstin } : {}),
       },
     });
     return {

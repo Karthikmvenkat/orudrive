@@ -1,10 +1,13 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from "@nestjs/common";
 import {
+  DocumentKind,
+  DocumentStatus,
   PartnerStatus,
   Prisma,
   UserStatus,
@@ -17,6 +20,7 @@ import { ROLES } from "../common/constants/roles";
 import { paginated } from "../common/dto/pagination.dto";
 import type { AuthUser } from "../common/decorators/current-user.decorator";
 import {
+  ApplyPartnerDto,
   CreatePartnerDto,
   PartnerQueryDto,
   SetCommissionDto,
@@ -186,6 +190,13 @@ export class PartnersService {
       });
     }
 
+    if (await this.gstinTaken(dto.gstin)) {
+      throw new ConflictException({
+        message: "Another partner already files that GSTIN",
+        code: "PARTNER_GSTIN_TAKEN",
+      });
+    }
+
     const commission =
       dto.commissionPercent ?? (await this.defaultCommissionPercent());
     const passwordHash = await this.password.hash(dto.password);
@@ -213,7 +224,7 @@ export class PartnersService {
           city: dto.city ?? "Puducherry",
           state: dto.state ?? "Puducherry",
           addressLine1: dto.addressLine1 ?? null,
-          gstin: dto.gstin ?? null,
+          gstin: dto.gstin,
           commissionPercent: new Prisma.Decimal(commission.toFixed(2)),
           status: PartnerStatus.PENDING,
         },
@@ -224,8 +235,45 @@ export class PartnersService {
     return this.shape(created);
   }
 
+  /**
+   * A self-service application is an admin entry with the commission left blank
+   * and nothing else the applicant may decide. It always lands as PENDING, so
+   * Master Admin is the only route to a live partner.
+   */
+  async apply(dto: ApplyPartnerDto) {
+    const existing = await this.prisma.user.findUnique({
+      where: { email: dto.email.toLowerCase() },
+      select: { id: true },
+    });
+    if (existing) {
+      throw new ConflictException({
+        message: "That e-mail already has an account. Sign in instead.",
+        code: "PARTNER_EMAIL_TAKEN",
+      });
+    }
+
+    return this.create({
+      tradingName: dto.tradingName,
+      legalName: dto.legalName,
+      email: dto.email,
+      password: dto.password,
+      phone: dto.phone,
+      city: dto.city,
+      state: dto.state,
+      addressLine1: dto.addressLine1,
+      gstin: dto.gstin,
+      commissionPercent: undefined,
+    });
+  }
+
   async update(id: string, dto: UpdatePartnerDto) {
     await this.ensureExists(id);
+    if (dto.gstin !== undefined && (await this.gstinTaken(dto.gstin, id))) {
+      throw new ConflictException({
+        message: "Another partner already files that GSTIN",
+        code: "PARTNER_GSTIN_TAKEN",
+      });
+    }
     const row = await this.prisma.vendorProfile.update({
       where: { id },
       data: {
@@ -250,7 +298,16 @@ export class PartnersService {
     dto: SetPartnerStatusDto,
     actor: AuthUser,
   ) {
-    await this.ensureExists(id);
+    const profile = await this.prisma.vendorProfile.findUnique({
+      where: { id },
+      select: { id: true, gstin: true },
+    });
+    if (!profile) throw this.notFound();
+
+    if (dto.status === PartnerStatus.APPROVED) {
+      await this.assertApprovable(profile);
+    }
+
     const row = await this.prisma.vendorProfile.update({
       where: { id },
       data: {
@@ -459,6 +516,48 @@ export class PartnersService {
       select: { id: true },
     });
     if (!row) throw this.notFound();
+  }
+
+  /** Returns the other profile that already files this GSTIN, if any. */
+  private gstinTaken(gstin: string, exceptId?: string) {
+    return this.prisma.vendorProfile.findFirst({
+      where: { gstin, ...(exceptId ? { id: { not: exceptId } } : {}) },
+      select: { id: true },
+    });
+  }
+
+  /**
+   * Approval is a compliance decision, not a button. A partner is let through
+   * only with a GSTIN on file plus a verified, unexpired KYC and GST certificate.
+   */
+  private async assertApprovable(profile: { id: string; gstin: string | null }) {
+    if (!profile.gstin) {
+      throw new BadRequestException({
+        message: "Record the partner's GSTIN before approving them",
+        code: "PARTNER_GSTIN_MISSING",
+      });
+    }
+
+    const verified = await this.prisma.vendorDocument.findMany({
+      where: {
+        vendorId: profile.id,
+        status: DocumentStatus.APPROVED,
+        kind: { in: [DocumentKind.KYC, DocumentKind.GST] },
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+      },
+      select: { kind: true },
+    });
+
+    const missing = [DocumentKind.KYC, DocumentKind.GST].filter(
+      (kind) => !verified.some((row) => row.kind === kind),
+    );
+    if (missing.length) {
+      throw new BadRequestException({
+        message: `Approval needs a verified document for: ${missing.join(", ")}`,
+        code: "PARTNER_DOCUMENTS_MISSING",
+        details: missing,
+      });
+    }
   }
 
   private notFound() {

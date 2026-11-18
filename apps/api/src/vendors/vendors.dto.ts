@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
 import { DocumentKind, DocumentStatus, PartnerStatus } from "@prisma/client";
-import { Type } from "class-transformer";
+import { Transform, Type } from "class-transformer";
 import {
   IsDateString,
   IsEmail,
@@ -17,11 +17,19 @@ import {
 import { PaginationQueryDto } from "../common/dto/pagination.dto";
 
 const URL_PATTERN = /^(https?:\/\/|\/)/i;
+const GSTIN_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{3}$/;
+
+// A GSTIN is only ever written in capitals, but an applicant who pastes a
+// lowercase copy of theirs must not be rejected for it.
+function uppercaseGstin({ value }: { value: unknown }) {
+  return typeof value === "string" ? value.trim().toUpperCase() : value;
+}
 
 // ------------------------------------------------------------------ partners
 
 // The commercial profile fields a partner can edit about themselves. Commission
-// and status sit outside this class because only Master Admin may change them.
+// and status sit outside this class because only Master Admin may change them,
+// and so does the GSTIN: it is proven by document, not self-declared.
 export class PartnerProfileFieldsDto {
   @ApiProperty({ example: "Pondy Rides" })
   @IsString()
@@ -58,13 +66,6 @@ export class PartnerProfileFieldsDto {
   @MaxLength(200)
   addressLine1?: string;
 
-  @ApiPropertyOptional({ example: "33ABCDE1234F1Z5" })
-  @IsOptional()
-  @Matches(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{3}$/, {
-    message: "gstin must match the 15-character GSTIN format",
-  })
-  gstin?: string;
-
   @ApiPropertyOptional({ example: "/images/partners/pondy.jpg" })
   @IsOptional()
   @Matches(URL_PATTERN, { message: "logoUrl must be an absolute URL or site path" })
@@ -84,6 +85,14 @@ export class CreatePartnerDto extends PartnerProfileFieldsDto {
   @MaxLength(72)
   password!: string;
 
+  @ApiProperty({ example: "33ABCDE1234F1Z5", description: "Mandatory: no partner exists without it" })
+  @IsString()
+  @Transform(uppercaseGstin)
+  @Matches(GSTIN_PATTERN, {
+    message: "gstin must match the 15-character GSTIN format",
+  })
+  gstin!: string;
+
   @ApiPropertyOptional({ example: 15, description: "Platform share, admin-controlled" })
   @IsOptional()
   @Type(() => Number)
@@ -93,7 +102,75 @@ export class CreatePartnerDto extends PartnerProfileFieldsDto {
   commissionPercent?: number;
 }
 
-export class UpdatePartnerDto extends PartialType(PartnerProfileFieldsDto) {}
+export class UpdatePartnerDto extends PartialType(PartnerProfileFieldsDto) {
+  @ApiPropertyOptional({ example: "33ABCDE1234F1Z5" })
+  @IsOptional()
+  @Transform(uppercaseGstin)
+  @Matches(GSTIN_PATTERN, {
+    message: "gstin must match the 15-character GSTIN format",
+  })
+  gstin?: string;
+}
+
+/**
+ * What an applicant may say about themselves. Commission and status are absent
+ * on purpose — they belong to Master Admin, and a public form must not be able
+ * to hand them out.
+ */
+export class ApplyPartnerDto {
+  @ApiProperty({ example: "Pondy Rides" })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(80)
+  tradingName!: string;
+
+  @ApiPropertyOptional({ example: "Pondy Rides Pvt Ltd" })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  legalName?: string;
+
+  @ApiProperty({ example: "owner@pondyrides.in" })
+  @IsEmail()
+  @MaxLength(160)
+  email!: string;
+
+  @ApiProperty({ example: "Pondy@Rides2026", minLength: 10 })
+  @IsString()
+  @MinLength(10)
+  @MaxLength(72)
+  password!: string;
+
+  @ApiProperty({ example: "+919840012345" })
+  @Matches(/^\+?[0-9 \-]{8,20}$/, { message: "phone must be 8-20 digits" })
+  phone!: string;
+
+  @ApiProperty({ example: "33ABCDE1234F1Z5" })
+  @IsString()
+  @Transform(uppercaseGstin)
+  @Matches(GSTIN_PATTERN, {
+    message: "gstin must match the 15-character GSTIN format",
+  })
+  gstin!: string;
+
+  @ApiPropertyOptional({ example: "Puducherry" })
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  city?: string;
+
+  @ApiPropertyOptional({ example: "Puducherry" })
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  state?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  addressLine1?: string;
+}
 
 export class SetPartnerStatusDto {
   @ApiProperty({ enum: PartnerStatus })

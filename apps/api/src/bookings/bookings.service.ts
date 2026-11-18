@@ -18,6 +18,7 @@ import {
   VehicleStatus,
 } from "@prisma/client";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { PartnerGateService } from "../common/services/partner-gate.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { PaymentsService } from "../payments/payments.service";
 import { CouponsService } from "../coupons/coupons.service";
@@ -123,6 +124,7 @@ export class BookingsService {
     private readonly notifications: NotificationsService,
     private readonly payments: PaymentsService,
     private readonly coupons: CouponsService,
+    private readonly partnerGate: PartnerGateService,
   ) {
     const tax = Number(this.config.get<string>("BOOKING_TAX_PERCENT") ?? 0);
     this.taxPercent = Number.isFinite(tax) ? Math.min(50, Math.max(0, tax)) : 0;
@@ -500,6 +502,8 @@ export class BookingsService {
   }
 
   async create(userId: string, dto: CreateBookingDto) {
+    await this.partnerGate.assertVehicleOwnerApproved(dto.vehicleId);
+
     const created = await this.prisma.$transaction(async (tx) => {
       const prepared = await this.prepare(dto, tx);
       const { pickupAt, returnAt, vehicle, driver, pricing } = prepared;

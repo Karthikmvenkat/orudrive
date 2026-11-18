@@ -28,7 +28,8 @@
         "autoIncrement": true
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE-WITH-PREVIEW-API-HOST/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://savarigo-api.onrender.com/api/v1",
+        "EXPO_PUBLIC_MEDIA_URL": "https://savarigo-web.vercel.app"
       }
     },
     "production": {

@@ -4,8 +4,15 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { AvailabilityStatus, Prisma, VehicleStatus } from "@prisma/client";
+import {
+  AvailabilityStatus,
+  DocumentKind,
+  DocumentStatus,
+  Prisma,
+  VehicleStatus,
+} from "@prisma/client";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { PartnerGateService } from "../common/services/partner-gate.service";
 import { paginated } from "../common/dto/pagination.dto";
 import type { AuthUser } from "../common/decorators/current-user.decorator";
 import type { RoleName } from "../common/constants/roles";
@@ -44,7 +51,10 @@ function normalizeImages(images?: VehicleImageInputDto[]) {
 
 @Injectable()
 export class VehiclesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly partnerGate: PartnerGateService,
+  ) {}
 
   private isAdmin(roles: RoleName[]): boolean {
     return roles.includes("ADMIN");
@@ -70,6 +80,33 @@ export class VehiclesService {
         "New vehicles stay pending until Master Admin approves them. Save as DRAFT and submit for approval.",
       code: "VEHICLE_APPROVAL_REQUIRED",
     });
+  }
+
+  /**
+   * Publishing is where the paperwork has to be proven — this is the rule the
+   * partner documents screen promises: no verified RC and insurance, no live listing.
+   */
+  private async assertComplianceDocuments(vehicleId: string) {
+    const required = [DocumentKind.VEHICLE_RC, DocumentKind.INSURANCE];
+    const verified = await this.prisma.vendorDocument.findMany({
+      where: {
+        vehicleId,
+        kind: { in: required },
+        status: DocumentStatus.APPROVED,
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+      },
+      select: { kind: true },
+    });
+    const missing = required.filter(
+      (kind) => !verified.some((doc) => doc.kind === kind),
+    );
+    if (missing.length) {
+      throw new BadRequestException({
+        message: `This vehicle goes live only after these documents are verified: ${missing.join(", ")}`,
+        code: "VEHICLE_DOCUMENTS_MISSING",
+        details: missing,
+      });
+    }
   }
 
   private orderBy(sort: VehicleSort = "popular"): Prisma.VehicleOrderByWithRelationInput[] {
@@ -186,7 +223,9 @@ export class VehiclesService {
 
   async listForStaff(actor: AuthUser, query: ManageVehiclesQueryDto) {
     const where = this.whereFor(query, false);
-    if (!this.isAdmin(actor.roles) && !actor.roles.includes("SUPPORT")) {
+    // A partner's fleet is pinned to their own user id whatever else their token
+    // claims, so a dual VENDOR+SUPPORT role cannot widen it with `ownerId`.
+    if (actor.roles.includes("VENDOR")) {
       where.ownerId = actor.id;
     } else if (query.ownerId) {
       where.ownerId = query.ownerId;
@@ -308,6 +347,7 @@ export class VehiclesService {
       this.isAdmin(actor.roles) && dto.ownerId ? dto.ownerId : actor.id;
     await this.ensureUser(ownerId);
     this.assertPublishable(actor.roles, dto.status);
+    await this.partnerGate.assertApproved(actor);
 
     if (dto.pricing?.validTo && dto.pricing.validFrom) {
       if (
@@ -393,6 +433,10 @@ export class VehiclesService {
     const existing = await this.findVehicle(id);
     this.assertCanManage(actor, existing.ownerId);
     this.assertPublishable(actor.roles, dto.status);
+    await this.partnerGate.assertApproved(actor);
+    if (dto.status === VehicleStatus.AVAILABLE) {
+      await this.assertComplianceDocuments(id);
+    }
 
     if (dto.categoryId || dto.locationId) {
       await this.ensureCatalogueRefs(

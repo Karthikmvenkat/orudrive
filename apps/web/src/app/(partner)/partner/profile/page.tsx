@@ -105,13 +105,11 @@ export default async function PartnerProfilePage({
                 className={adminInput}
               />
             </Field>
-            <Field label="GSTIN" hint="15 characters, eg 33AABCP1234F1Z5">
-              <input
-                name="gstin"
-                maxLength={15}
-                defaultValue={profile.gstin ?? ""}
-                className={adminInput}
-              />
+            <Field
+              label="GSTIN"
+              hint="Set by Master Admin — ask them to change it, and to re-verify your documents."
+            >
+              <input value={profile.gstin ?? "Not on file yet"} readOnly className={adminInput} />
             </Field>
             <Field label="City">
               <input name="city" maxLength={60} defaultValue={profile.city} className={adminInput} />

@@ -12,7 +12,7 @@ import {
 import { PageHero } from "@/components/shared/page-hero";
 import { SectionHeading } from "@/components/shared/section";
 import { EarningsCalculator } from "@/components/shared/earnings-calculator";
-import { ListingForm } from "@/components/shared/listing-form";
+import { PartnerApplicationForm } from "@/components/shared/partner-application-form";
 import {
   Accordion,
   AccordionContent,
@@ -23,24 +23,27 @@ import {
 export const metadata: Metadata = {
   title: "List Your Vehicle",
   description:
-    "Earn from your idle scooter, motorcycle or car in Puducherry. SavariGo handles bookings, insurance and servicing — you keep 80% of every rental.",
+    "Rent out your fleet in Puducherry through SavariGo. Apply with your GSTIN, get verified by our team, then list and price your own vehicles.",
 };
 
 const benefits = [
   {
     icon: Banknote,
-    title: "80% of every rental",
-    detail: "Transparent 20% platform fee. Payouts every Friday to your bank or UPI ID.",
+    title: "One commission, no surprises",
+    detail:
+      "Your partner account carries a single commission rate. Every booking shows gross rent, platform share and your net.",
   },
   {
     icon: ShieldCheck,
-    title: "Insurance built in",
-    detail: "Every trip is covered. We verify riders and collect deposits before handover.",
+    title: "Paperwork checked, not guessed",
+    detail:
+      "A vehicle goes live only after its RC and insurance are uploaded and verified. Riders pay a deposit before handover.",
   },
   {
     icon: Wrench,
-    title: "Servicing handled",
-    detail: "Our White Town bay takes care of routine maintenance and pre-rental checks.",
+    title: "You run the fleet",
+    detail:
+      "Add, edit and retire vehicles from the partner portal. Master Admin never has to touch your catalogue.",
   },
   {
     icon: CalendarCheck,
@@ -53,49 +56,50 @@ const process = [
   {
     icon: ClipboardCheck,
     title: "Apply",
-    detail: "Share the vehicle details through the form. Two minutes, no documents yet.",
+    detail: "Submit your business details and GSTIN. This creates a pending partner login.",
   },
   {
     icon: BadgeCheck,
-    title: "Inspect",
-    detail: "We check the vehicle and paperwork, then agree a daily rate together.",
+    title: "Get verified",
+    detail:
+      "Upload your GST certificate and KYC proof, then Master Admin approves the account and sets your commission.",
   },
   {
     icon: Banknote,
     title: "Earn",
-    detail: "We photograph, list and book it. You hand over the keys; payouts land weekly.",
+    detail:
+      "List each vehicle with its RC and insurance, price it your way, and track bookings and earnings as they land.",
   },
 ];
 
 const requirements = [
-  "RC in your name and valid insurance",
-  "Vehicle year 2015 or newer",
-  "Clean service history and working lights, brakes and horn",
-  "Two helmets for two-wheelers",
-  "Pollution certificate valid for at least 3 months",
-  "Original ID and a cancelled cheque or UPI ID for payouts",
+  "A GSTIN registered to your business — one GSTIN, one partner account",
+  "GST certificate and KYC proof, uploaded to your pending partner account",
+  "A valid RC for every vehicle you list",
+  "Insurance for every vehicle, valid on the dates it is bookable",
+  "Master Admin approval before any of your vehicles appear in search",
 ];
 
 const faqs = [
   {
     question: "How much can I really earn?",
     answer:
-      "A well-maintained scooter booked 20 days a month earns roughly ₹5,600 after the platform fee at current rates. Cars and motorcycles earn more; the calculator above uses live Puducherry averages.",
+      "A well-maintained scooter booked 20 days a month earns roughly ₹5,600 at the example rates in the calculator above. Cars and motorcycles earn more. Your own figures depend on the rates you set and the commission on your account.",
   },
   {
     question: "Who pays for fuel and cleaning?",
     answer:
-      "Riders return vehicles at the same fuel level, so fuel is effectively covered by them. We include a cleaning and inspection after every booking, paid from the platform fee.",
+      "Riders return vehicles at the same fuel level, so fuel is effectively covered by them. Cleaning and routine servicing stay with you as the fleet owner — price your vehicles to cover it.",
   },
   {
     question: "What if the vehicle is damaged?",
     answer:
-      "Every booking carries a security deposit and insurance. Damage beyond normal wear is recovered from the deposit first, and our team manages the claim with you end to end.",
+      "Every booking holds a security deposit at checkout, and a vehicle is only bookable while its insurance is uploaded and verified. Damage beyond normal wear is recovered from that deposit first.",
   },
   {
     question: "Can I take my vehicle off the platform?",
     answer:
-      "Any time. Block future dates in the partner dashboard and complete your existing bookings. There is no lock-in and no exit fee.",
+      "Any time. Switch it to unavailable or block future dates in the partner portal and complete your existing bookings. There is no lock-in and no exit fee.",
   },
 ];
 
@@ -111,7 +115,7 @@ export default function ListYourVehiclePage() {
             Someone else&apos;s ride.
           </>
         }
-        description="Turn an idle scooter, motorcycle or car into weekly income. SavariGo handles the bookings, insurance, cleaning and servicing — you keep 80%."
+        description="Turn idle scooters, motorcycles and cars into booked rentals. You own the fleet and its paperwork; we bring verified riders and take a commission per trip."
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "List Your Vehicle" }]}
         actions={[
           { label: "Apply to list", href: "#apply" },
@@ -123,7 +127,7 @@ export default function ListYourVehiclePage() {
         <SectionHeading
           eyebrow="Why list with SavariGo"
           title="A rental business without the admin"
-          description="You own the vehicle. We bring verified riders, collect deposits and keep it road-ready."
+          description="You own the vehicles. We bring verified riders, hold their deposits and take care of booking, billing and support."
         />
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {benefits.map((benefit) => (
@@ -144,19 +148,19 @@ export default function ListYourVehiclePage() {
           <div className="flex flex-col justify-center">
             <p className="label-overline mb-2.5">The maths</p>
             <h2 className="text-[26px] font-extrabold leading-tight tracking-[-0.02em] text-ink sm:text-[30px]">
-              You keep four rupees of every five
+              One commission, set on your account
             </h2>
             <p className="mt-3 max-w-lg text-[13.5px] leading-relaxed text-muted">
-              The 20% platform fee covers listing, verification, insurance administration, payment
-              processing, cleaning and routine servicing. There are no joining fees, monthly fees or
-              hidden deductions.
+              Commission is the only charge, and Master Admin fixes it on your partner account when
+              the account is approved. The calculator uses an example 20% so you can see the shape
+              of a month. There are no joining fees, monthly fees or listing fees.
             </p>
             <ul className="mt-5 grid gap-2.5 sm:grid-cols-2">
               {[
-                "Weekly payouts, every Friday",
-                "Deposit held and released for you",
-                "Rider verification and support",
-                "Damage claims managed end to end",
+                "Gross, commission and net per booking",
+                "Rider deposit collected at checkout",
+                "RC and insurance verified before go-live",
+                "Availability and pricing you control",
               ].map((item) => (
                 <li key={item} className="flex gap-2 text-[12.5px] text-ink-soft">
                   <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-brand-500" />
@@ -173,8 +177,8 @@ export default function ListYourVehiclePage() {
           <div>
             <SectionHeading
               eyebrow="How it works"
-              title="Listed in three steps"
-              description="Most vehicles are live within 72 hours of inspection."
+              title="Partner in three steps"
+              description="Approval is manual. Master Admin checks every GSTIN and document set before a vehicle is bookable."
             />
             <ol className="mt-7 space-y-5">
               {process.map((step, i) => (
@@ -205,7 +209,7 @@ export default function ListYourVehiclePage() {
             </div>
           </div>
 
-          <ListingForm />
+          <PartnerApplicationForm />
         </div>
       </section>
 

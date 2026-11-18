@@ -388,7 +388,6 @@ export async function updatePartnerProfile(formData: FormData) {
           city: text(formData, "city"),
           state: text(formData, "state"),
           addressLine1: text(formData, "addressLine1"),
-          gstin: text(formData, "gstin"),
           logoUrl: text(formData, "logoUrl"),
         },
       }),

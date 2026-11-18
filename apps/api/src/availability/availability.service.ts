@@ -10,6 +10,7 @@ import {
   Prisma,
 } from "@prisma/client";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { PartnerGateService } from "../common/services/partner-gate.service";
 import { isOverlapViolation } from "../common/utils/overlap-violation";
 import type { AuthUser } from "../common/decorators/current-user.decorator";
 import {
@@ -25,7 +26,10 @@ const RESERVED_STATUSES = [
 
 @Injectable()
 export class AvailabilityService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly partnerGate: PartnerGateService,
+  ) {}
 
   private async assertCanManage(actor: AuthUser, vehicleId: string) {
     const vehicle = await this.prisma.vehicle.findUnique({
@@ -47,6 +51,7 @@ export class AvailabilityService {
         code: "VEHICLE_FORBIDDEN",
       });
     }
+    await this.partnerGate.assertOwnerApproved(vehicle.ownerId);
   }
 
   private window(query: AvailabilityQueryDto) {

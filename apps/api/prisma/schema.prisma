@@ -389,6 +389,9 @@ model VendorProfile {
   documents VendorDocument[]
   tickets   SupportTicket[]
 
+  // Two partners must not claim one GSTIN. NULL stays allowed, so a legacy
+  // profile without a GSTIN can still exist while it is being chased up.
+  @@unique([gstin])
   @@index([status, city])
   @@map("vendor_profiles")
 }

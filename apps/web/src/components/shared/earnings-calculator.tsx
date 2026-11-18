@@ -30,7 +30,7 @@ export function EarningsCalculator() {
     <div className="rounded-panel border border-line bg-surface p-5 sm:p-6">
       <h2 className="text-[17px] font-extrabold text-ink">Estimate your monthly earnings</h2>
       <p className="mt-1 text-[12px] text-muted">
-        Based on current Puducherry demand. Your rate can be higher for newer models.
+        Indicative Puducherry rates. You set the real price for each vehicle you list.
       </p>
 
       <div className="mt-5 grid grid-cols-3 gap-2">
@@ -78,7 +78,7 @@ export function EarningsCalculator() {
           <span>{inr(gross)}</span>
         </div>
         <div className="mt-1 flex items-center justify-between text-[11.5px] text-white/60">
-          <span>Platform fee (20%)</span>
+          <span>Platform fee (example 20%)</span>
           <span>−{inr(gross - net)}</span>
         </div>
         <div className="mt-3 flex items-end justify-between border-t border-white/15 pt-3">
@@ -88,7 +88,7 @@ export function EarningsCalculator() {
           <span className="font-display text-[26px] font-extrabold leading-none">{inr(net)}</span>
         </div>
         <p className="mt-2 text-[11px] text-white/55">
-          ≈ {inr(yearly)} per year at this pace. Insurance and servicing are on us.
+          ≈ {inr(yearly)} per year at this pace. Your commission is set when your account is approved.
         </p>
       </div>
     </div>

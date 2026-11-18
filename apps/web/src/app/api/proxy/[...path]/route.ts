@@ -13,6 +13,7 @@ const ALLOWED_ROOTS = new Set([
   "notifications",
   "coupons",
   "drivers",
+  "partners",
   "admin",
   "availability",
   "pricing",

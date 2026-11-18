@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { PartnerGateService } from "../common/services/partner-gate.service";
 import {
   AvailabilityController,
   VehicleAvailabilityController,
@@ -7,7 +8,7 @@ import { AvailabilityService } from "./availability.service";
 
 @Module({
   controllers: [VehicleAvailabilityController, AvailabilityController],
-  providers: [AvailabilityService],
+  providers: [AvailabilityService, PartnerGateService],
   exports: [AvailabilityService],
 })
 export class AvailabilityModule {}
