@@ -13,21 +13,38 @@ const marketingPages = [
   { path: "/tow-vehicle", title: /^Tow Vehicle Support/, section: /towing rates/i },
   { path: "/bike-taxi", title: /^Bike Taxi/, section: /fares you can count on/i },
   { path: "/driver-on-demand", title: /^Driver On-Demand/, section: /from request to ride/i },
+  { path: "/mobile-puncher", title: /^Mobile Puncher/, section: /from flat tyre/i },
 ];
 
 test.describe("public website", () => {
-  test("home page renders the hero and the search widget", async ({ page }) => {
+  test("home page renders the hero, services and booking bar", async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
 
     await expect(
       page.getByRole("heading", { level: 1, name: /your ride/i }),
     ).toBeVisible();
-    await expect(page.getByLabel("Pick-up city")).toBeVisible();
-    await expect(page.getByLabel("Pick-up date")).toBeVisible();
-    await expect(page.getByLabel("Return date")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Search Rides" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Explore Cars" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Explore Bikes" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 2, name: "Our Services" }),
+    ).toBeVisible();
+
+    const services = page.locator("#services");
+    for (const [label, href] of [
+      ["Rental Bikes", "/bikes-scooters"],
+      ["Rental Cars", "/cars"],
+      ["Tow Vehicle", "/tow-vehicle"],
+      ["Acting Drivers", "/driver-on-demand"],
+      ["Mobile Puncher", "/mobile-puncher"],
+    ]) {
+      await expect(services.getByRole("link", { name: label })).toHaveAttribute(
+        "href",
+        href,
+      );
+    }
+
+    await expect(page.getByLabel("Pickup location")).toBeVisible();
+    await expect(page.getByLabel("Select date")).toBeVisible();
+    await expect(page.getByLabel("Select time")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Find Service" })).toBeVisible();
   });
 
   test("every marketing page renders its title, hero and sections", async ({ page }) => {

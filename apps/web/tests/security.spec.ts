@@ -20,6 +20,7 @@ test.describe("site security", () => {
     expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
     expect(headers["permissions-policy"]).toContain("camera=()");
     expect(headers["permissions-policy"]).toContain("microphone=()");
+    expect(headers["permissions-policy"]).toContain("geolocation=(self)");
 
     const csp = headers["content-security-policy"] ?? "";
     expect(csp).toContain("default-src 'self'");

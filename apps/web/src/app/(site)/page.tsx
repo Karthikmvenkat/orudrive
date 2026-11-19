@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { Hero, StatsStrip } from "@/components/home/hero";
-import { CategoriesSection } from "@/components/home/categories-section";
-import { VehicleCarousel } from "@/components/vehicles/vehicle-carousel";
+import { Hero } from "@/components/home/hero";
+import { ServicesSection } from "@/components/home/services-section";
+import { BookingBar } from "@/components/home/booking-bar";
+import { NearbyRides } from "@/components/home/nearby-rides";
 import { OfferBanner } from "@/components/home/offer-banner";
 import { HowItWorksSection } from "@/components/home/how-it-works-section";
 import { DestinationsSection } from "@/components/home/destinations-section";
@@ -37,14 +38,9 @@ export default async function HomePage() {
   return (
     <>
       <Hero />
-      <StatsStrip />
-      <CategoriesSection />
-      <VehicleCarousel
-        vehicles={popular}
-        title="Popular rides near you"
-        description="Top-rated and most booked vehicles in Pondicherry."
-        href="/vehicles"
-      />
+      <ServicesSection />
+      <BookingBar />
+      <NearbyRides fallback={popular} />
       <OfferBanner />
       <HowItWorksSection />
       <DestinationsSection />

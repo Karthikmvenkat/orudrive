@@ -54,34 +54,37 @@ test.describe("responsive layout", () => {
     await expect(header.getByRole("link", { name: "Sign in" })).toBeVisible();
   });
 
-  test("a desktop gets only the profile control in the header", async ({ page }) => {
+  test("a desktop gets the full navigation and the profile control", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/", { waitUntil: "domcontentloaded" });
 
     const header = page.getByRole("banner");
-    await expect(header.getByRole("link", { name: "Sign in" })).toBeVisible();
-    for (const label of ["Car Rentals", "Tow Vehicle", "Support"]) {
-      await expect(header.getByRole("link", { name: label })).toHaveCount(0);
+    const nav = page.getByRole("navigation", { name: "Primary" });
+    await expect(nav).toBeVisible();
+    await expect(nav.getByRole("link", { name: "Home" })).toBeVisible();
+    for (const label of ["For Riders", "For Drivers", "For Businesses"]) {
+      await expect(nav.getByRole("button", { name: label })).toBeVisible();
     }
+    await expect(header.getByRole("link", { name: "Support" })).toBeVisible();
+    await expect(header.getByRole("link", { name: "Sign in" })).toBeVisible();
   });
 
-  test("search stays usable on a phone", async ({ page }) => {
+  test("booking bar searches from a phone", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 640 });
     await page.goto("/", { waitUntil: "domcontentloaded" });
 
-    // The panel is state-owned: hydration lands before its mount effect has
-    // prefilled the window, and typing into that gap gets overwritten.
-    await waitForHydration(page, 'input[aria-label="Pick-up date"]');
-    await expect(page.getByLabel("Pick-up date")).not.toHaveValue("");
-    await page.getByLabel("Pick-up date").fill(isoDay(20));
-    await page.getByLabel("Return date").fill(isoDay(24));
-    await expect(page.getByLabel("Pick-up date")).toHaveValue(isoDay(20));
-    // "all" would route to /bikes-scooters; a car search is the /cars journey.
-    await page.getByLabel("Vehicle type").selectOption("car");
-    await page.getByRole("button", { name: "Search Rides" }).click();
+    // The bar is state-owned: hydration lands before its mount effect sets
+    // the minimum date.
+    await waitForHydration(page, 'input[aria-label="Select date"]');
+    await page.getByLabel("Pickup location").fill("Auroville");
+    await page.getByLabel("Select date").fill(isoDay(20));
+    await page.getByLabel("Select time").fill("10:30");
+    await page.getByRole("button", { name: "Find Service" }).click();
 
     await expect(page).toHaveURL(
-      new RegExp(`/cars\\?city=.+&from=${isoDay(20)}&to=${isoDay(24)}`),
+      new RegExp(
+        `/vehicles\\?city=Auroville&from=${isoDay(20)}&to=${isoDay(21)}&time=10%3A30`,
+      ),
     );
     const overflow = await page.evaluate(() => {
       const root = document.scrollingElement ?? document.documentElement;

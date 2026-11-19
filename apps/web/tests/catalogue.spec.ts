@@ -125,7 +125,7 @@ test.describe("catalogue and search", () => {
 
   test("the bikes route honours a type query", async ({ page }) => {
     await page.goto("/bikes-scooters?type=scooter", { waitUntil: "domcontentloaded" });
-    await expect(page.getByText(/Showing \d+ of \d+ vehicles/)).toBeVisible();
+    await expect(page.getByText(/Showing \d+–\d+ of \d+ vehicles/)).toBeVisible();
     await expect(vehicleLinks(page).first()).toBeVisible();
   });
 });

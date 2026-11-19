@@ -10,6 +10,7 @@ const columns = [
       { label: "Bike & Scooter Rental", href: "/bikes-scooters" },
       { label: "Car Rental", href: "/cars" },
       { label: "Tow Vehicle", href: "/tow-vehicle" },
+      { label: "Mobile Puncher", href: "/mobile-puncher" },
       { label: "Bike Taxi", href: "/bike-taxi" },
       { label: "Driver On-Demand", href: "/driver-on-demand" },
     ],

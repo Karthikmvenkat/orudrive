@@ -45,7 +45,7 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+    value: "camera=(), microphone=(), geolocation=(self), interest-cohort=()",
   },
   // Meaningless over plain http and cached aggressively by browsers, so it is
   // only sent once the site is really being served over HTTPS.
