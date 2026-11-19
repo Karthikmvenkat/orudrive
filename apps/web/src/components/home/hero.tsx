@@ -1,68 +1,26 @@
 import Image from "next/image";
-import { BadgeCheck, Headset, ReceiptText, ShieldCheck } from "lucide-react";
 import { SearchPanel } from "@/components/shared/search-panel";
 
 export function Hero() {
   return (
     <section className="relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-brand-50/70 via-page/40 to-white" />
-      <div
-        className="pointer-events-none absolute -right-24 -top-32 size-[420px] rounded-full bg-brand-100/50 blur-3xl"
-        aria-hidden
-      />
+      <h1 className="sr-only">
+        Your ride. Your city. Your freedom.
+      </h1>
 
-      <div className="container-page relative grid items-center gap-8 pb-4 pt-8 lg:grid-cols-[1.02fr_1fr] lg:gap-10 lg:pb-0 lg:pt-12">
-        <div className="animate-fade-up">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white/80 px-3 py-1.5 text-[11.5px] font-semibold text-brand-700 shadow-sm">
-            <BadgeCheck className="size-3.5" />
-            Puducherry&apos;s Trusted Rental Platform
-          </span>
-
-          <h1 className="mt-5 font-display text-[40px] font-extrabold leading-[1.02] tracking-[-0.035em] text-ink sm:text-[52px] lg:text-[58px]">
-            Your ride. Your city.
-            <br />
-            <span className="text-brand-500">Your freedom.</span>
-          </h1>
-
-          <p className="mt-4 max-w-md text-[14.5px] leading-relaxed text-muted sm:text-[15.5px]">
-            Book bikes, scooters and cars for everyday rides and weekend
-            escapes.
-          </p>
-
-          <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
-            {[
-              { label: "Verified Vehicles", icon: ShieldCheck },
-              { label: "Transparent Pricing", icon: ReceiptText },
-              { label: "24/7 Support", icon: Headset },
-            ].map((item) => (
-              <span
-                key={item.label}
-                className="inline-flex items-center gap-2 text-[12.5px] font-medium text-ink-soft"
-              >
-                <span className="grid size-6 place-items-center rounded-full bg-brand-100 text-brand-700">
-                  <item.icon className="size-3.5" />
-                </span>
-                {item.label}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="relative">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-[22px] border border-white/60 bg-page shadow-lift sm:aspect-[16/10] lg:aspect-[4/3.1]">
-            <Image
-              src="/images/hero/hero-main.jpg"
-              alt="Scooter and car parked on a tree-lined Puducherry street with French colonial buildings"
-              fill
-              priority
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-cover"
-            />
-          </div>
-        </div>
+      <div className="container-page relative pt-6 lg:pt-8">
+        <Image
+          src="/images/hero/savarigo-banner.png"
+          alt="Your ride, your freedom — rent bikes, cars and tow vehicles and book professional drivers with SavariGo"
+          width={1434}
+          height={344}
+          priority
+          sizes="(max-width: 1280px) 100vw, 1200px"
+          className="h-auto w-full rounded-[18px] border border-line/60 shadow-lift lg:rounded-[22px]"
+        />
       </div>
 
-      <div className="container-page relative z-10 -mt-2 pb-6 lg:-mt-10 lg:pb-8">
+      <div className="container-page relative z-10 mt-4 pb-6 lg:mt-6 lg:pb-8">
         <SearchPanel />
       </div>
     </section>
