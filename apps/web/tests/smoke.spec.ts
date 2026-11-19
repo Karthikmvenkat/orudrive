@@ -26,8 +26,8 @@ test.describe("public website", () => {
     await expect(page.getByLabel("Pick-up date")).toBeVisible();
     await expect(page.getByLabel("Return date")).toBeVisible();
     await expect(page.getByRole("button", { name: "Search Rides" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Car Rentals" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Bike Rentals" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Explore Cars" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Explore Bikes" })).toBeVisible();
   });
 
   test("every marketing page renders its title, hero and sections", async ({ page }) => {

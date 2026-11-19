@@ -44,35 +44,24 @@ test.describe("responsive layout", () => {
     });
   }
 
-  test("a phone gets the menu button and the sheet it opens", async ({ page }) => {
+  test("a phone gets only the profile control in the header", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/", { waitUntil: "domcontentloaded" });
 
-    await expect(page.getByRole("navigation", { name: "Primary" })).toBeHidden();
-    const trigger = page.getByRole("button", { name: "Open menu" });
-    await expect(trigger).toBeVisible();
-
-    await trigger.click();
-    const sheet = page.getByRole("dialog");
-    await expect(sheet).toBeVisible();
-    // The sheet spells this one "Car Rental"; the desktop bar says "Car Rentals".
-    await expect(sheet.getByRole("link", { name: "Car Rental" }).first()).toBeVisible();
-
-    await sheet.getByRole("link", { name: "Car Rental" }).first().click();
-    await expect(page).toHaveURL(/\/cars$/);
-    await expect(sheet).toBeHidden();
+    const header = page.getByRole("banner");
+    await expect(page.getByRole("navigation", { name: "Primary" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Open menu" })).toHaveCount(0);
+    await expect(header.getByRole("link", { name: "Sign in" })).toBeVisible();
   });
 
-  test("a desktop gets the full navigation and no menu button", async ({ page }) => {
+  test("a desktop gets only the profile control in the header", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/", { waitUntil: "domcontentloaded" });
 
-    await expect(page.getByRole("navigation", { name: "Primary" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Open menu" })).toBeHidden();
+    const header = page.getByRole("banner");
+    await expect(header.getByRole("link", { name: "Sign in" })).toBeVisible();
     for (const label of ["Car Rentals", "Tow Vehicle", "Support"]) {
-      await expect(
-        page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: label }),
-      ).toBeVisible();
+      await expect(header.getByRole("link", { name: label })).toHaveCount(0);
     }
   });
 
