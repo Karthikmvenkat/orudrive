@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { SearchPanel } from "@/components/shared/search-panel";
 
 export function Hero() {
@@ -9,18 +10,29 @@ export function Hero() {
       </h1>
 
       <div className="container-page relative pt-6 lg:pt-8">
-        <Image
-          src="/images/hero/savarigo-banner.png"
-          alt="Your ride, your freedom — rent bikes, cars and tow vehicles and book professional drivers with SavariGo"
-          width={1434}
-          height={344}
-          priority
-          sizes="(max-width: 1280px) 100vw, 1200px"
-          className="h-auto w-full rounded-[18px] border border-line/60 shadow-lift lg:rounded-[22px]"
-        />
+        <div className="relative">
+          <Image
+            src="/images/hero/savarigo-banner.png"
+            alt="Your ride, your freedom — rent bikes, cars and tow vehicles and book professional drivers with SavariGo"
+            width={1434}
+            height={344}
+            priority
+            sizes="(max-width: 1280px) 100vw, 1200px"
+            className="h-auto w-full rounded-[18px] border border-line/60 shadow-lift lg:rounded-[22px]"
+          />
+          {/* The banner draws its own CTA, so the link sits on top of that artwork. */}
+          <Link
+            href="#search"
+            aria-label="Start booking"
+            className="absolute left-[3%] top-[72%] h-[24%] w-[20%] rounded-full outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+          />
+        </div>
       </div>
 
-      <div className="container-page relative z-10 mt-4 pb-6 lg:mt-6 lg:pb-8">
+      <div
+        id="search"
+        className="container-page relative z-10 mt-4 scroll-mt-24 pb-6 lg:mt-6 lg:pb-8"
+      >
         <SearchPanel />
       </div>
     </section>

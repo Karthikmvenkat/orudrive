@@ -44,7 +44,9 @@ export function Header() {
               >
                 {user ? initials : <UserRound className="size-4" />}
               </span>
-              <span className="hidden capitalize sm:block">{profileLabel}</span>
+              <span className={cn("hidden sm:block", user && "capitalize")}>
+                {profileLabel}
+              </span>
             </Link>
           )}
         </div>
