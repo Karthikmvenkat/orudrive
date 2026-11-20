@@ -1,7 +1,12 @@
 import { NestFactory } from "@nestjs/core";
 import { ConfigService } from "@nestjs/config";
 import { NestExpressApplication } from "@nestjs/platform-express";
-import { ValidationPipe, Logger } from "@nestjs/common";
+import {
+  ValidationPipe,
+  Logger,
+  type RawBodyRequest,
+} from "@nestjs/common";
+import express, { type Request } from "express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
@@ -20,6 +25,21 @@ async function bootstrap() {
   const logger = new Logger("Bootstrap");
 
   app.setGlobalPrefix("api/v1");
+
+  // A partner application carries two base64 documents, far past the 100 KB
+  // default. Registering the parser for this one path before listen() means it
+  // reads the body first; the global parser Nest adds afterwards finds the body
+  // already parsed and steps aside, so the webhook's rawBody is untouched.
+  app.use(
+    "/api/v1/partners/apply",
+    express.json({
+      limit: "8mb",
+      verify: (request: Request, _response, buffer) => {
+        (request as RawBodyRequest<Request>).rawBody = buffer;
+      },
+    }),
+  );
+
   applyHttpSecurity(app, resolveHttpSecurityOptions(config));
 
   app.useGlobalPipes(

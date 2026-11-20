@@ -54,6 +54,14 @@ function withQuery(path: string, query?: Record<string, QueryValue>): string {
   return search ? `${url}?${search}` : url;
 }
 
+/**
+ * The absolute API address for a path. Route handlers that pipe bytes rather
+ * than JSON need the URL itself, because `apiRequest` parses a body.
+ */
+export function apiUrl(path: string): string {
+  return withQuery(path);
+}
+
 function normalizeMessage(payload: ApiErrorPayload | null, fallback: string): string {
   const message = payload?.message;
   if (Array.isArray(message)) return message.join(". ");

@@ -20,8 +20,10 @@ import { ROLES } from "../common/constants/roles";
 import { paginated } from "../common/dto/pagination.dto";
 import type { AuthUser } from "../common/decorators/current-user.decorator";
 import {
+  ApplicationDocumentDto,
   ApplyPartnerDto,
   CreatePartnerDto,
+  MAX_DOCUMENT_BYTES,
   PartnerQueryDto,
   SetCommissionDto,
   SetPartnerStatusDto,
@@ -41,6 +43,22 @@ const EMPTY_STATS: FleetStats = {
   bookings: 0,
   revenue: 0,
 };
+
+/**
+ * The declared media type travels in a JSON body anyone can edit, so the first
+ * bytes decide what was actually uploaded.
+ */
+const DOCUMENT_SIGNATURES: Record<string, readonly number[]> = {
+  "application/pdf": [0x25, 0x50, 0x44, 0x46],
+  "image/jpeg": [0xff, 0xd8],
+  "image/png": [0x89, 0x50, 0x4e, 0x47],
+};
+
+function matchesSignature(mediaType: string, bytes: Uint8Array): boolean {
+  const signature = DOCUMENT_SIGNATURES[mediaType];
+  if (!signature) return false;
+  return signature.every((byte, index) => bytes[index] === byte);
+}
 
 @Injectable()
 export class PartnersService {
@@ -252,7 +270,12 @@ export class PartnersService {
       });
     }
 
-    return this.create({
+    // Decode before anything is written: a bad file must not leave a partner
+    // row stranded in the queue with no paperwork attached.
+    const gst = this.decodeDocument(dto.gstDocument, "GST certificate");
+    const kyc = this.decodeDocument(dto.kycDocument, "KYC proof");
+
+    const partner = await this.create({
       tradingName: dto.tradingName,
       legalName: dto.legalName,
       email: dto.email,
@@ -264,6 +287,71 @@ export class PartnersService {
       gstin: dto.gstin,
       commissionPercent: undefined,
     });
+
+    await this.attachApplicationDocuments(partner.id, dto.gstin, [
+      { kind: DocumentKind.GST, title: "GST certificate", file: dto.gstDocument, bytes: gst },
+      { kind: DocumentKind.KYC, title: "KYC proof", file: dto.kycDocument, bytes: kyc },
+    ]);
+
+    return partner;
+  }
+
+  /**
+   * Both copies land as PENDING rows so the approval queue opens with the
+   * documents already in front of Master Admin. The url points at the web
+   * route that hands the bytes back to someone allowed to see them.
+   */
+  private async attachApplicationDocuments(
+    vendorId: string,
+    gstin: string,
+    entries: readonly {
+      kind: DocumentKind;
+      title: string;
+      file: ApplicationDocumentDto;
+      bytes: Uint8Array<ArrayBuffer>;
+    }[],
+  ) {
+    for (const entry of entries) {
+      const row = await this.prisma.vendorDocument.create({
+        data: {
+          vendorId,
+          kind: entry.kind,
+          title: entry.title,
+          reference: entry.kind === DocumentKind.GST ? gstin : null,
+          url: "/documents/pending",
+          contentBytes: entry.bytes,
+          contentFileName: entry.file.fileName,
+          contentMediaType: entry.file.mediaType,
+          contentSizeBytes: entry.bytes.byteLength,
+          status: DocumentStatus.PENDING,
+        },
+        select: { id: true },
+      });
+      await this.prisma.vendorDocument.update({
+        where: { id: row.id },
+        data: { url: `/api/documents/${row.id}/file` },
+      });
+    }
+  }
+
+  private decodeDocument(
+    file: ApplicationDocumentDto,
+    title: string,
+  ): Uint8Array<ArrayBuffer> {
+    const bytes = Uint8Array.from(Buffer.from(file.dataBase64, "base64"));
+    if (bytes.byteLength === 0 || bytes.byteLength > MAX_DOCUMENT_BYTES) {
+      throw new BadRequestException({
+        message: `${title} must be a file of up to ${MAX_DOCUMENT_BYTES / 1024 / 1024} MB`,
+        code: "DOCUMENT_TOO_LARGE",
+      });
+    }
+    if (!matchesSignature(file.mediaType, bytes)) {
+      throw new BadRequestException({
+        message: `${title} does not look like a ${file.mediaType} file`,
+        code: "DOCUMENT_TYPE_MISMATCH",
+      });
+    }
+    return bytes;
   }
 
   async update(id: string, dto: UpdatePartnerDto) {

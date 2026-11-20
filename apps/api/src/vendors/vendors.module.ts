@@ -8,6 +8,7 @@ import { VendorController } from "./vendor.controller";
 import { DocumentsService } from "./documents.service";
 import {
   AdminDocumentsController,
+  DocumentFileController,
   VendorDocumentsController,
 } from "./documents.controller";
 
@@ -18,6 +19,7 @@ import {
     VendorController,
     AdminDocumentsController,
     VendorDocumentsController,
+    DocumentFileController,
   ],
   providers: [
     PartnersService,

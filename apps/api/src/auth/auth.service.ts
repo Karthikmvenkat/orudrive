@@ -12,6 +12,7 @@ import { OtpPurpose, Prisma, UserStatus } from "@prisma/client";
 import { createHash, randomUUID } from "node:crypto";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PasswordService } from "../common/services/password.service";
+import { PartnerGateService } from "../common/services/partner-gate.service";
 import { OtpService } from "../common/otp/otp.service";
 import { ttlToSeconds } from "../common/utils/ttl";
 import type { RoleName } from "../common/constants/roles";
@@ -65,6 +66,7 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly passwords: PasswordService,
     private readonly otp: OtpService,
+    private readonly partnerGate: PartnerGateService,
   ) {}
 
   private get accessSecret(): string {
@@ -207,6 +209,10 @@ export class AuthService {
         code: "INVALID_CREDENTIALS",
       });
     }
+    await this.partnerGate.assertSignInAllowed(
+      user.id,
+      user.userRoles.map((entry) => entry.role.name),
+    );
 
     await this.prisma.user.update({
       where: { id: user.id },
@@ -333,6 +339,10 @@ export class AuthService {
         code: "ACCOUNT_SUSPENDED",
       });
     }
+    await this.partnerGate.assertSignInAllowed(
+      user.id,
+      user.userRoles.map((entry) => entry.role.name),
+    );
 
     await this.otp.consume(
       phone,
@@ -414,6 +424,7 @@ export class AuthService {
     }
 
     const roles = user.userRoles.map((entry) => entry.role.name as RoleName);
+    await this.partnerGate.assertSignInAllowed(user.id, roles);
     const accessToken = await this.signAccessToken(user.id, user.email, roles);
     const refreshToken = await this.signRefreshToken(user.id);
     const refreshExpiresAt = new Date(Date.now() + this.refreshTtl * 1000);

@@ -236,7 +236,25 @@ export default async function AdminDocumentsPage({
                       </button>
                     </form>
                   )}
-                  {!document.url && (
+                  {document.hasFile ? (
+                    <a
+                      className="text-[12px] font-semibold text-brand-700 hover:underline"
+                      href={document.url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Open file
+                    </a>
+                  ) : document.url ? (
+                    <a
+                      className="text-[12px] font-semibold text-brand-700 hover:underline"
+                      href={document.url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Open link
+                    </a>
+                  ) : (
                     <span className="text-[11px] text-muted">No file attached</span>
                   )}
                 </AdminAction>

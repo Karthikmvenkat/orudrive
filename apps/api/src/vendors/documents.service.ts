@@ -8,6 +8,7 @@ import { DocumentStatus, Prisma } from "@prisma/client";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { paginated } from "../common/dto/pagination.dto";
 import type { AuthUser } from "../common/decorators/current-user.decorator";
+import { ROLES } from "../common/constants/roles";
 import { VendorPortalService } from "./vendor-portal.service";
 import {
   CreateVendorDocumentDto,
@@ -43,6 +44,9 @@ export class DocumentsService {
     const [rows, total, pending] = await this.prisma.$transaction([
       this.prisma.vendorDocument.findMany({
         where,
+        // The queue lists paperwork; the bytes are only ever pulled one at a
+        // time by whoever is allowed to open them.
+        omit: { contentBytes: true },
         orderBy: [{ status: "asc" }, { createdAt: "desc" }],
         skip: query.skip,
         take: query.limit,
@@ -101,10 +105,52 @@ export class DocumentsService {
     const vendorId = await this.portal.vendorIdFor(actor.id);
     const rows = await this.prisma.vendorDocument.findMany({
       where: { vendorId },
+      omit: { contentBytes: true },
       orderBy: { createdAt: "desc" },
       include: includeRelations(),
     });
     return rows.map(shape);
+  }
+
+  /**
+   * The stored copy of a document. Master Admin and Support see every copy;
+   * a partner only ever gets one of their own.
+   */
+  async open(actor: AuthUser, id: string) {
+    const row = await this.prisma.vendorDocument.findUnique({
+      where: { id },
+      select: {
+        vendor: { select: { id: true } },
+        contentBytes: true,
+        contentFileName: true,
+        contentMediaType: true,
+      },
+    });
+
+    const isReviewer =
+      actor.roles.includes(ROLES.ADMIN) || actor.roles.includes(ROLES.SUPPORT);
+    if (!isReviewer) {
+      const vendorId = await this.portal.vendorIdFor(actor.id);
+      if (row?.vendor.id !== vendorId) {
+        throw new ForbiddenException({
+          message: "That document belongs to another partner",
+          code: "DOCUMENT_FORBIDDEN",
+        });
+      }
+    }
+
+    if (!row?.contentBytes) {
+      throw new NotFoundException({
+        message: "No file is stored for this document",
+        code: "DOCUMENT_FILE_MISSING",
+      });
+    }
+
+    return {
+      bytes: Buffer.from(row.contentBytes),
+      fileName: row.contentFileName ?? `${row.vendor.id}-document`,
+      mediaType: row.contentMediaType ?? "application/octet-stream",
+    };
   }
 
   async createForVendor(actor: AuthUser, dto: CreateVendorDocumentDto) {
@@ -166,9 +212,12 @@ function includeRelations() {
   } satisfies Prisma.VendorDocumentInclude;
 }
 
-type DocumentRow = Prisma.VendorDocumentGetPayload<{
-  include: ReturnType<typeof includeRelations>;
-}>;
+type DocumentRow = Omit<
+  Prisma.VendorDocumentGetPayload<{
+    include: ReturnType<typeof includeRelations>;
+  }>,
+  "contentBytes"
+>;
 
 function shape(row: DocumentRow) {
   // Approved paperwork that has since run out reads as EXPIRED without a sweep.
@@ -183,6 +232,10 @@ function shape(row: DocumentRow) {
     title: row.title,
     reference: row.reference,
     url: row.url,
+    hasFile: row.contentSizeBytes !== null,
+    fileName: row.contentFileName,
+    fileMediaType: row.contentMediaType,
+    fileSizeBytes: row.contentSizeBytes,
     status: expired ? DocumentStatus.EXPIRED : row.status,
     expiresAt: row.expiresAt,
     reviewNote: row.reviewNote,

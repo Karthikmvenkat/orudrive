@@ -2,9 +2,13 @@ import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
 import { DocumentKind, DocumentStatus, PartnerStatus } from "@prisma/client";
 import { Transform, Type } from "class-transformer";
 import {
+  IsBase64,
   IsDateString,
+  IsDefined,
   IsEmail,
   IsEnum,
+  IsIn,
+  IsNotEmptyObject,
   IsNumber,
   IsOptional,
   IsString,
@@ -13,6 +17,7 @@ import {
   MaxLength,
   Min,
   MinLength,
+  ValidateNested,
 } from "class-validator";
 import { PaginationQueryDto } from "../common/dto/pagination.dto";
 
@@ -117,6 +122,31 @@ export class UpdatePartnerDto extends PartialType(PartnerProfileFieldsDto) {
  * on purpose — they belong to Master Admin, and a public form must not be able
  * to hand them out.
  */
+// A partner's paperwork travels with the application: Master Admin reviews the
+// exact copy that was submitted, so an account can be decided without the
+// applicant ever signing in. 2 MB decoded is a phone-camera scan of one page.
+export const MAX_DOCUMENT_BYTES = 2 * 1024 * 1024;
+export const DOCUMENT_MEDIA_TYPES = ["application/pdf", "image/jpeg", "image/png"] as const;
+
+export class ApplicationDocumentDto {
+  @ApiProperty({ example: "gst-certificate.pdf" })
+  @IsString()
+  @MinLength(3)
+  @MaxLength(120)
+  fileName!: string;
+
+  @ApiProperty({ enum: DOCUMENT_MEDIA_TYPES })
+  @IsIn(DOCUMENT_MEDIA_TYPES)
+  mediaType!: (typeof DOCUMENT_MEDIA_TYPES)[number];
+
+  @ApiProperty({ description: "Base64 of the file, up to 2 MB once decoded" })
+  @IsBase64()
+  // Base64 grows by about a third, so the string cap keeps the decoded bytes
+  // inside MAX_DOCUMENT_BYTES before anything is allocated.
+  @MaxLength(Math.ceil((MAX_DOCUMENT_BYTES * 4) / 3) + 8)
+  dataBase64!: string;
+}
+
 export class ApplyPartnerDto {
   @ApiProperty({ example: "Pondy Rides" })
   @IsString()
@@ -170,6 +200,20 @@ export class ApplyPartnerDto {
   @IsString()
   @MaxLength(200)
   addressLine1?: string;
+
+  @ApiProperty({ type: ApplicationDocumentDto, description: "GST certificate copy" })
+  @Type(() => ApplicationDocumentDto)
+  @IsDefined({ message: "Attach the GST certificate" })
+  @IsNotEmptyObject()
+  @ValidateNested()
+  gstDocument!: ApplicationDocumentDto;
+
+  @ApiProperty({ type: ApplicationDocumentDto, description: "KYC proof copy" })
+  @Type(() => ApplicationDocumentDto)
+  @IsDefined({ message: "Attach the KYC proof" })
+  @IsNotEmptyObject()
+  @ValidateNested()
+  kycDocument!: ApplicationDocumentDto;
 }
 
 export class SetPartnerStatusDto {

@@ -658,6 +658,10 @@ export interface AdminDocumentItem {
   title: string;
   reference: string | null;
   url: string;
+  hasFile: boolean;
+  fileName: string | null;
+  fileMediaType: string | null;
+  fileSizeBytes: number | null;
   status: DocumentStatusValue;
   expiresAt: string | null;
   reviewNote: string | null;
