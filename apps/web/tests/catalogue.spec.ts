@@ -10,23 +10,18 @@ import { waitForHydration } from "./support/hydration";
 const vehicleLinks = (page: Page) => page.locator('main h3 a[href^="/vehicles/"]');
 
 test.describe("catalogue and search", () => {
-  test("the home search hands its dates to the car listing", async ({ page }) => {
+  test("the home search hands its dates to the vehicle listing", async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
+    await waitForHydration(page, 'input[aria-label="Select date"]');
 
-    const from = page.getByLabel("Pick-up date");
-    const to = page.getByLabel("Return date");
-    // The panel renders empty and its mount effect fills in tomorrow's dates,
-    // so a populated field proves React owns the value being typed.
-    await expect(from).not.toHaveValue("");
+    await page.getByLabel("Pickup location").fill("White Town");
+    await page.getByLabel("Select date").fill("2026-12-10");
+    await page.getByRole("button", { name: "Find Service" }).click();
 
-    await from.fill("2026-12-10");
-    await to.fill("2026-12-14");
-    await page.getByLabel("Vehicle type").selectOption("car");
-    await page.getByRole("button", { name: "Search Rides" }).click();
-
-    await expect(page).toHaveURL(/\/cars\?/);
+    await expect(page).toHaveURL(/\/vehicles\?/);
     await expect(page).toHaveURL(/from=2026-12-10/);
-    await expect(page).toHaveURL(/to=2026-12-14/);
+    await expect(page).toHaveURL(/to=2026-12-11/);
+    await expect(page).toHaveURL(/city=White(\+|%20)Town/);
     await expect(vehicleLinks(page).first()).toBeVisible();
   });
 

@@ -241,7 +241,7 @@ export function VehicleBrowse({
 
         {shown.length > 0 ? (
           <>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {shown.map((vehicle, i) => (
                 <VehicleCard key={vehicle.id} vehicle={vehicle} priority={i < 3} />
               ))}

@@ -79,7 +79,7 @@ export default async function VehicleDetailPage({
         />
       </div>
 
-      <div className="container-page grid gap-8 pb-28 lg:grid-cols-[1fr_372px] lg:pb-10">
+      <div className="container-page grid gap-8 pb-4 lg:grid-cols-[1fr_372px] lg:pb-0">
         <div>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -161,25 +161,6 @@ export default async function VehicleDetailPage({
               locations={checkoutLocations}
             />
           </div>
-
-          {similar.length > 0 && (
-            <div className="mt-9">
-              <div className="flex items-end justify-between gap-3">
-                <h2 className="text-[19px] font-extrabold text-ink">Similar vehicles</h2>
-                <Link
-                  href={vehicle.category === "car" ? "/cars" : "/bikes-scooters"}
-                  className="text-[12px] font-semibold text-brand-700 hover:underline"
-                >
-                  View all →
-                </Link>
-              </div>
-              <div className="mt-3.5 grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
-                {similar.map((item) => (
-                  <VehicleCard key={item.id} vehicle={item} />
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         <aside className="hidden lg:block">
@@ -193,6 +174,25 @@ export default async function VehicleDetailPage({
           </div>
         </aside>
       </div>
+
+      {similar.length > 0 && (
+        <div className="container-page pt-9 pb-28 lg:pb-10">
+          <div className="flex items-end justify-between gap-3">
+            <h2 className="text-[19px] font-extrabold text-ink">Similar vehicles</h2>
+            <Link
+              href={vehicle.category === "car" ? "/cars" : "/bikes-scooters"}
+              className="text-[12px] font-semibold text-brand-700 hover:underline"
+            >
+              View all →
+            </Link>
+          </div>
+          <div className="mt-3.5 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+            {similar.map((item) => (
+              <VehicleCard key={item.id} vehicle={item} />
+            ))}
+          </div>
+        </div>
+      )}
 
       <MobileBookingBar vehicle={vehicle} />
     </>
