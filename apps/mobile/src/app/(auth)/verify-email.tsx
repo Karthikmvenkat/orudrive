@@ -1,12 +1,12 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Link, router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { Badge, Button, Field } from '@/components/ui';
-import { Radius, Spacing } from '@/constants/theme';
+import { Badge, Button, Field, PageGlow } from '@/components/ui';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { authApi } from '@/lib/api/endpoints';
 import { describeApiError } from '@/lib/api/errors';
@@ -55,12 +55,30 @@ export default function VerifyEmailScreen() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
-      <View style={styles.wrap}>
+      <PageGlow />
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          hitSlop={10}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/(auth)/email'))}
+          style={styles.back}>
+          <Ionicons name="arrow-back" size={23} color={theme.text} />
+        </Pressable>
+
+        <ThemedText style={[styles.pageTitle, { color: theme.text }]}>Verify e-mail</ThemedText>
+
         <View style={[styles.icon, { backgroundColor: theme.brandSoft }]}>
-          <Ionicons name="mail-open-outline" size={28} color={theme.brandStrong} />
+          <Ionicons name="mail" size={30} color={theme.accentGold} />
         </View>
-        <ThemedText type="heading">Confirm your e-mail</ThemedText>
-        <ThemedText type="body" themeColor="textSecondary">
+
+        <ThemedText style={[styles.heading, { color: theme.text }]}>
+          Confirm your e-mail
+        </ThemedText>
+        <ThemedText style={[styles.lede, { color: theme.textSecondary }]}>
           We sent a 6-digit code to {email.trim() || 'your address'}. Enter it here to activate
           bookings for this account.
         </ThemedText>
@@ -85,22 +103,31 @@ export default function VerifyEmailScreen() {
 
             <Button title="Verify" onPress={() => void verify()} loading={busy === 'verify'} />
             <Button title="Resend code" variant="secondary" onPress={() => void resend()} loading={busy === 'resend'} />
-            <Link href="/(auth)/email" asChild>
-              <ThemedText type="link" themeColor="brand" style={styles.skip}>
+            <Pressable
+              accessibilityRole="link"
+              style={styles.skipRow}
+              onPress={() => router.replace('/(auth)/email')}>
+              <ThemedText style={[styles.skip, { color: theme.accentGold }]}>
                 Skip for now, sign in
               </ThemedText>
-            </Link>
+              <Ionicons name="arrow-forward" size={16} color={theme.accentGold} />
+            </Pressable>
           </View>
         )}
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  wrap: { flex: 1, justifyContent: 'center', padding: Spacing.four, gap: Spacing.three },
-  icon: { width: 52, height: 52, borderRadius: Radius.card, alignItems: 'center', justifyContent: 'center' },
+  scroll: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two, paddingBottom: Spacing.five, gap: Spacing.three },
+  back: { width: 40, height: 40, alignItems: 'flex-start', justifyContent: 'center' },
+  pageTitle: { fontSize: 26, lineHeight: 32, fontWeight: '800', letterSpacing: -0.5 },
+  icon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginTop: Spacing.two },
+  heading: { fontSize: 21, lineHeight: 27, fontWeight: '800', letterSpacing: -0.3 },
+  lede: { fontSize: 15, lineHeight: 22 },
   form: { gap: Spacing.three, marginTop: Spacing.two },
-  skip: { textAlign: 'center' },
+  skipRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 6 },
+  skip: { fontSize: 14, fontWeight: '700' },
 });

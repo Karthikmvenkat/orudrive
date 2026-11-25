@@ -12,7 +12,7 @@ export function BikesHero({ count }: { count: number }) {
   );
 
   return (
-    <section className="relative overflow-hidden bg-[#f6f7f1]">
+    <section className="relative overflow-hidden bg-[#f7f4ec]">
       <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[57%] lg:block">
         <div
           aria-hidden
@@ -49,7 +49,7 @@ export function BikesHero({ count }: { count: number }) {
           </p>
           <Link
             href="#bikes"
-            className="mt-6 inline-flex h-12 items-center gap-2 rounded-full bg-brand-500 px-6 text-[14px] font-bold text-white transition hover:bg-brand-600"
+            className="mt-6 inline-flex h-12 items-center gap-2 rounded-full bg-brand-500 px-6 text-[14px] font-bold text-ink transition hover:bg-brand-600"
           >
             Explore Rentals
             <ArrowRight className="size-4" />

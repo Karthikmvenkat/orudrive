@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BadgeCheck, Fuel, Gauge, MapPin, Settings2, Users } from "lucide-react";
+import { BadgeCheck, Briefcase, Fuel, Gauge, MapPin, Settings2, Snowflake, Users } from "lucide-react";
 import { vehicles, vehicleBySlug } from "@/lib/data/vehicles";
 import { toCheckoutLocation, toVehicle } from "@/lib/api/adapters";
 import { safeLocations, safeVehicle, safeVehicles } from "@/lib/api/catalogue";
@@ -57,11 +57,15 @@ export default async function VehicleDetailPage({
     .filter((v) => v.category === vehicle.category && v.id !== vehicle.id)
     .slice(0, 3);
 
+  const luggageSpec = vehicle.specs.find((spec) => spec.label === "Luggage");
+  const acSpec = vehicle.specs.find((spec) => spec.label === "AC");
   const quickSpecs = [
     { icon: Settings2, label: vehicle.engine },
     { icon: Gauge, label: vehicle.mileage },
     { icon: Fuel, label: vehicle.fuel },
     { icon: Users, label: `${vehicle.seats} seats` },
+    ...(luggageSpec ? [{ icon: Briefcase, label: luggageSpec.value }] : []),
+    ...(acSpec ? [{ icon: Snowflake, label: `AC: ${acSpec.value}` }] : []),
   ];
 
   return (
@@ -71,8 +75,18 @@ export default async function VehicleDetailPage({
           items={[
             { label: "Home", href: "/" },
             {
-              label: vehicle.category === "car" ? "Car Rental" : "Bike Rentals",
-              href: vehicle.category === "car" ? "/cars" : "/bikes-scooters",
+              label:
+                vehicle.category === "car"
+                  ? "Car Rental"
+                  : vehicle.category === "van"
+                    ? "Van Rental"
+                    : "Bike Rentals",
+              href:
+                vehicle.category === "car"
+                  ? "/cars"
+                  : vehicle.category === "van"
+                    ? "/vans"
+                    : "/bikes-scooters",
             },
             { label: vehicle.name },
           ]}
@@ -87,9 +101,11 @@ export default async function VehicleDetailPage({
                 <Badge variant="outline" size="sm">
                   {vehicle.category === "car"
                     ? "Self-drive car"
-                    : vehicle.category === "scooter"
-                      ? "Scooter"
-                      : "Motorcycle"}
+                    : vehicle.category === "van"
+                      ? "Self-drive van"
+                      : vehicle.category === "scooter"
+                        ? "Scooter"
+                        : "Motorcycle"}
                 </Badge>
                 {vehicle.tags.map((tag) => (
                   <Badge key={tag} variant="brand" size="sm">
@@ -141,7 +157,7 @@ export default async function VehicleDetailPage({
                 ["24/7 support", "Call, WhatsApp or chat — we pick up."],
               ].map(([title, copy]) => (
                 <div key={title} className="flex items-start gap-2.5">
-                  <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-brand-500 text-white">
+                  <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-brand-500 text-ink">
                     <BadgeCheck className="size-3" />
                   </span>
                   <div>

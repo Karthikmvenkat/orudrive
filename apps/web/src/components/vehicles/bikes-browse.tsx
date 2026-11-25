@@ -207,7 +207,7 @@ export function BikesBrowse({
                 <span
                   className={cn(
                     "grid size-9 place-items-center rounded-lg",
-                    active ? "bg-brand-500 text-white" : "bg-page text-ink-soft",
+                    active ? "bg-brand-500 text-ink" : "bg-page text-ink-soft",
                   )}
                 >
                   <Icon className="size-4.5" />
@@ -303,7 +303,7 @@ export function BikesBrowse({
                   className={cn(
                     "grid size-4 place-items-center rounded border",
                     active
-                      ? "border-brand-500 bg-brand-500 text-white"
+                      ? "border-brand-500 bg-brand-500 text-ink"
                       : "border-line-strong bg-white",
                   )}
                 >
@@ -347,8 +347,8 @@ export function BikesBrowse({
         </div>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-2xl bg-[#f1faf2] p-4">
-        <span className="grid size-9 place-items-center rounded-full bg-brand-500 text-white">
+      <div className="mt-4 overflow-hidden rounded-2xl bg-[#fbf5e9] p-4">
+        <span className="grid size-9 place-items-center rounded-full bg-brand-500 text-ink">
           <ShieldCheck className="size-4.5" />
         </span>
         <p className="mt-3 text-[13px] font-bold text-ink">Need it delivered?</p>
@@ -401,7 +401,7 @@ export function BikesBrowse({
                 className={cn(
                   "inline-flex h-10 items-center gap-1.5 rounded-lg px-3 text-[12.5px] font-semibold transition",
                   view === "grid"
-                    ? "bg-brand-500 text-white"
+                    ? "bg-brand-500 text-ink"
                     : "text-ink-soft hover:bg-page",
                 )}
               >
@@ -415,7 +415,7 @@ export function BikesBrowse({
                 className={cn(
                   "inline-flex h-10 items-center gap-1.5 rounded-lg px-3 text-[12.5px] font-semibold transition",
                   view === "list"
-                    ? "bg-brand-500 text-white"
+                    ? "bg-brand-500 text-ink"
                     : "text-ink-soft hover:bg-page",
                 )}
               >
@@ -439,7 +439,7 @@ export function BikesBrowse({
                   className={cn(
                     "inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-[12px] font-semibold transition",
                     active
-                      ? "border-transparent bg-brand-500 text-white"
+                      ? "border-transparent bg-brand-500 text-ink"
                       : "border-line bg-white text-ink-soft hover:border-brand-300 hover:text-brand-700",
                   )}
                 >
@@ -477,7 +477,7 @@ export function BikesBrowse({
               <button
                 type="button"
                 onClick={clearAll}
-                className="mt-4 inline-flex h-10 items-center rounded-full bg-brand-500 px-5 text-[12.5px] font-semibold text-white hover:bg-brand-600"
+                className="mt-4 inline-flex h-10 items-center rounded-full bg-brand-500 px-5 text-[12.5px] font-semibold text-ink hover:bg-brand-600"
               >
                 Clear filters
               </button>
@@ -509,7 +509,7 @@ export function BikesBrowse({
                     className={cn(
                       "grid size-9 place-items-center rounded-full text-[12.5px] font-semibold transition",
                       number === current
-                        ? "bg-brand-500 text-white"
+                        ? "bg-brand-500 text-ink"
                         : "border border-line bg-white text-ink-soft hover:border-brand-300",
                     )}
                   >

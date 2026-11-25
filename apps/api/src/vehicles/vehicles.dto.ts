@@ -223,6 +223,25 @@ export class CreateVehicleDto {
   @Min(0)
   mileageLimitKm?: number;
 
+  @ApiPropertyOptional({
+    example: 4,
+    description: "Required when the category is van: bags the luggage bay holds",
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(30)
+  luggageCapacity?: number;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: "Required when the category is van: air conditioning fitted",
+  })
+  @IsOptional()
+  @IsBoolean()
+  ac?: boolean;
+
   @ApiProperty({ example: 1500 })
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })

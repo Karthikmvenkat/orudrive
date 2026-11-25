@@ -32,13 +32,17 @@ function RootNavigator() {
       <Stack.Screen name="vehicles/[slug]" options={{ headerShown: false }} />
       <Stack.Screen name="checkout/[vehicleId]" options={{ headerShown: false }} />
       <Stack.Screen name="booking/[code]" options={{ headerShown: false }} />
-      <Stack.Screen name="change-password" options={{ title: 'Change password' }} />
-      <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
+      <Stack.Screen name="change-password" options={{ headerShown: false }} />
+      <Stack.Screen name="notifications" options={{ headerShown: false }} />
       <Stack.Screen name="details" options={{ headerShown: false }} />
       <Stack.Screen name="licence" options={{ headerShown: false }} />
       <Stack.Screen name="saved" options={{ headerShown: false }} />
       <Stack.Screen name="payments" options={{ headerShown: false }} />
       <Stack.Screen name="offers" options={{ headerShown: false }} />
+      <Stack.Screen name="recent" options={{ headerShown: false }} />
+      <Stack.Screen name="reviews" options={{ headerShown: false }} />
+      <Stack.Screen name="service/[slug]" options={{ headerShown: false }} />
+      <Stack.Screen name="rentals/van" options={{ headerShown: false }} />
       <Stack.Screen name="+not-found" options={{ title: 'Not found' }} />
     </Stack>
   );

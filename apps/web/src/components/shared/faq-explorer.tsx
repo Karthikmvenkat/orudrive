@@ -68,7 +68,7 @@ export function FaqExplorer() {
               className={cn(
                 "rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition",
                 group === item
-                  ? "border-brand-500 bg-brand-500 text-white"
+                  ? "border-brand-500 bg-brand-500 text-ink"
                   : "border-line bg-surface text-ink-soft hover:border-brand-200 hover:text-brand-700",
               )}
             >

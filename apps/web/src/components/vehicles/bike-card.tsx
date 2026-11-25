@@ -45,7 +45,7 @@ export function BikeCard({
   const badges = (
     <div className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5">
       {vehicle.popular && (
-        <span className="rounded-full bg-brand-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-sm">
+        <span className="rounded-full bg-brand-500 px-2.5 py-1 text-[10px] font-bold text-ink shadow-sm">
           Popular
         </span>
       )}
@@ -79,7 +79,7 @@ export function BikeCard({
       className={cn(
         "inline-flex h-9 shrink-0 items-center gap-1 rounded-full px-4 text-[12px] font-semibold transition",
         vehicle.available
-          ? "bg-brand-500 text-white hover:bg-brand-600"
+          ? "bg-brand-500 text-ink hover:bg-brand-600"
           : "border border-line-strong text-ink-soft hover:bg-page",
       )}
     >

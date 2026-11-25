@@ -270,5 +270,5 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: Radius.field,
   },
-  applyText: { color: '#ffffff', fontSize: 15, fontWeight: '800' },
+  applyText: { color: '#242424', fontSize: 15, fontWeight: '800' },
 });

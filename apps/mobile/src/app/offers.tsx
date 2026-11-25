@@ -89,12 +89,12 @@ function CouponCard({
       <View style={styles.head}>
         <View style={styles.headText}>
           <ThemedText type="subtitle">{coupon.title}</ThemedText>
-          <ThemedText type="smallBold" style={{ color: theme.brand }}>
+          <ThemedText type="smallBold" style={{ color: theme.brandStrong }}>
             {value}
           </ThemedText>
         </View>
         <View style={[styles.tag, { backgroundColor: theme.brandSoft }]}>
-          <Ionicons name="pricetag" size={16} color={theme.brand} />
+          <Ionicons name="pricetag" size={16} color={theme.brandStrong} />
         </View>
       </View>
 
@@ -120,11 +120,11 @@ function CouponCard({
           <Ionicons
             name={copied ? 'checkmark-circle' : 'copy-outline'}
             size={16}
-            color={theme.brand}
+            color={theme.brandStrong}
           />
         </Pressable>
         <Pressable accessibilityRole="button" onPress={onExplore} hitSlop={8}>
-          <ThemedText type="smallBold" style={{ color: theme.brand }}>
+          <ThemedText type="smallBold" style={{ color: theme.brandStrong }}>
             Find a ride
           </ThemedText>
         </Pressable>

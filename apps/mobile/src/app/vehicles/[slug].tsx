@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
   FlatList,
@@ -20,8 +20,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { CircleButton, MenuRow, Notice, Segmented, Sheet, SpecTile } from '@/components/kit';
-import { Badge } from '@/components/ui';
 import { Radius, Spacing } from '@/constants/theme';
+import {
+  compactMileage,
+  includedFeatures,
+  isBookedOut,
+  mileageLabel,
+  mileageLimitLabel,
+} from '@/features/catalogue/copy';
+import { RideTile } from '@/features/catalogue/ride-card';
 import { useRentalWindow } from '@/features/search/window-context';
 import { useTheme } from '@/hooks/use-theme';
 import { catalogueApi } from '@/lib/api/endpoints';
@@ -34,17 +41,23 @@ import type {
 } from '@/lib/api/types';
 import { formatMoney, formatWeekdayDay } from '@/lib/format';
 import { useFavorites } from '@/lib/favorites';
+import { recordRecentlyViewed } from '@/lib/recently-viewed';
 import { useAsyncResource } from '@/lib/use-async';
 
 type Detail = {
   vehicle: ApiVehicle;
   availability: ApiAvailability | null;
   reviews: ApiVehicleReviews | null;
+  similar: ApiVehicle[];
 };
 
 type Tab = 'overview' | 'specs' | 'plans' | 'reviews';
 
 const DURATIONS = [1, 2, 3, 5, 7, 10, 14, 21, 30];
+
+function reviewCountLabel(count: number): string {
+  return count >= 1000 ? `${(count / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(count);
+}
 
 export default function VehicleDetailScreen() {
   const theme = useTheme();
@@ -61,14 +74,27 @@ export default function VehicleDetailScreen() {
 
   const detail = useAsyncResource<Detail>(`${slug}|${window.pickupAt}`, async () => {
     const vehicle = await catalogueApi.vehicle(slug);
-    const [availability, reviews] = await Promise.all([
+    const [availability, reviews, related] = await Promise.all([
       catalogueApi.availability(vehicle.id, { from: window.pickupAt, to: window.returnAt }).catch(
         () => null,
       ),
       catalogueApi.reviews(vehicle.slug).catch(() => null),
+      catalogueApi.vehicles({ category: vehicle.category.slug, limit: 8 }).catch(() => null),
     ]);
-    return { vehicle, availability, reviews };
+    const similar = (related?.items ?? [])
+      .filter((entry) => entry.id !== vehicle.id && entry.category.slug === vehicle.category.slug)
+      .slice(0, 3);
+    return { vehicle, availability, reviews, similar };
   });
+
+  // Snapshot once per ride so "Recently viewed" has something real to list.
+  const recordedSlug = useRef<string | null>(null);
+  useEffect(() => {
+    const vehicle = detail.data?.vehicle;
+    if (!vehicle || recordedSlug.current === vehicle.slug) return;
+    recordedSlug.current = vehicle.slug;
+    void recordRecentlyViewed(vehicle);
+  }, [detail.data]);
 
   if (detail.status === 'loading') {
     return (
@@ -86,18 +112,18 @@ export default function VehicleDetailScreen() {
           {detail.error ?? 'Try again in a moment.'}
         </ThemedText>
         <Pressable accessibilityRole="button" onPress={detail.reload} style={styles.retry}>
-          <Text style={[styles.retryText, { color: theme.brand }]}>Try again</Text>
+          <Text style={[styles.retryText, { color: theme.brandStrong }]}>Try again</Text>
         </Pressable>
       </SafeAreaView>
     );
   }
 
-  const { vehicle, availability, reviews } = detail.data;
+  const { vehicle, availability, reviews, similar } = detail.data;
+  const bookedOut = isBookedOut(vehicle);
   const images =
     vehicle.images.length > 0 ? vehicle.images : vehicle.primaryImage ? [vehicle.primaryImage] : [];
   const saved = isSaved(vehicle.id);
   const returnAt = new Date(new Date(window.pickupAt).getTime() + durationDays * 86_400_000).toISOString();
-  const total = vehicle.pricePerDay * durationDays + vehicle.depositAmount;
   const plan = vehicle.pricing[0] ?? null;
 
   function onGalleryScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
@@ -158,7 +184,6 @@ export default function VehicleDetailScreen() {
           ) : (
             <View style={[styles.galleryImage, styles.galleryFallback]} />
           )}
-
           <SafeAreaView edges={['top']} style={styles.galleryTop} pointerEvents="box-none">
             <CircleButton icon="chevron-back" label="Go back" onPress={() => router.back()} />
             <View style={styles.galleryActions}>
@@ -180,21 +205,41 @@ export default function VehicleDetailScreen() {
               <View
                 style={[
                   styles.statusDot,
-                  { backgroundColor: availability?.isAvailable === false ? theme.warning : theme.brand },
+                  {
+                    backgroundColor: bookedOut
+                      ? theme.danger
+                      : availability?.isAvailable === false
+                        ? theme.warning
+                        : theme.success,
+                  },
                 ]}
               />
               <Text style={[styles.statusText, { color: theme.text }]}>
-                {availability?.isAvailable === false ? 'Busy on your dates' : 'Available'}
+                {bookedOut
+                  ? 'Booked out'
+                  : availability?.isAvailable === false
+                    ? 'Busy on your dates'
+                    : 'Available'}
               </Text>
             </View>
           </View>
 
           {images.length > 1 ? (
-            <View style={styles.galleryCounter}>
-              <Text style={styles.galleryCounterText}>
-                {galleryIndex + 1}/{images.length}
-              </Text>
-            </View>
+            <>
+              <View style={styles.galleryDots} pointerEvents="none">
+                {images.map((image, index) => (
+                  <View
+                    key={image.id}
+                    style={[styles.galleryDot, index === galleryIndex && styles.galleryDotActive]}
+                  />
+                ))}
+              </View>
+              <View style={styles.galleryCounter}>
+                <Text style={styles.galleryCounterText}>
+                  {galleryIndex + 1}/{images.length}
+                </Text>
+              </View>
+            </>
           ) : null}
         </View>
 
@@ -214,7 +259,7 @@ export default function VehicleDetailScreen() {
                   onPress={() => jumpTo(index)}
                   style={[
                     styles.thumb,
-                    { borderColor: index === galleryIndex ? theme.brand : 'transparent' },
+                    { borderColor: index === galleryIndex ? theme.brandStrong : 'transparent' },
                   ]}>
                   {uri ? (
                     <Image
@@ -235,12 +280,6 @@ export default function VehicleDetailScreen() {
         ) : null}
 
         <View style={styles.pad}>
-          <View style={styles.badgeRow}>
-            <Badge text={vehicle.category.name.replace(/s$/i, '')} tone="neutral" />
-            {vehicle.popular ? <Badge text="Most booked" tone="brand" /> : null}
-            {vehicle.rating >= 4.7 ? <Badge text="Top rated" tone="info" /> : null}
-          </View>
-
           <View style={styles.titleRow}>
             <ThemedText type="title" style={styles.title}>
               {vehicle.name}
@@ -248,19 +287,22 @@ export default function VehicleDetailScreen() {
           </View>
 
           <View style={styles.ratingRow}>
-            <Ionicons name="star" size={14} color={theme.brand} />
+            <Ionicons name="star" size={15} color={theme.accentGold} />
             <ThemedText type="smallBold">{vehicle.rating.toFixed(1)}</ThemedText>
             <Text style={[styles.ratingMeta, { color: theme.textSecondary }]}>
-              ({vehicle.reviewCount} reviews)
+              ({reviewCountLabel(vehicle.reviewCount)} reviews)
             </Text>
-            <Text style={[styles.ratingMeta, { color: theme.textSecondary }]}>·</Text>
-            <Ionicons name="location-outline" size={13} color={theme.textSecondary} />
+            <Text style={[styles.ratingMeta, { color: theme.textSecondary }]}>•</Text>
             <Text style={[styles.ratingMeta, { color: theme.textSecondary }]}>{vehicle.location.city}</Text>
           </View>
 
           <View style={styles.specRow}>
             <SpecTile icon="cog-outline" value={vehicle.engine || '—'} label="Engine" />
-            <SpecTile icon="speedometer-outline" value={vehicle.mileage || '—'} label="Mileage" />
+            <SpecTile
+              icon="speedometer-outline"
+              value={vehicle.mileage ? compactMileage(vehicle.mileage, mileageLabel(vehicle.fuelType)) : '—'}
+              label={mileageLabel(vehicle.fuelType)}
+            />
             <SpecTile
               icon={vehicle.fuelType === 'ELECTRIC' ? 'flash-outline' : 'water-outline'}
               value={vehicle.fuelType.charAt(0) + vehicle.fuelType.slice(1).toLowerCase()}
@@ -271,12 +313,12 @@ export default function VehicleDetailScreen() {
 
           <View style={[styles.tripCard, { backgroundColor: theme.backgroundElement }]}>
             <View style={styles.tripHead}>
-              <ThemedText type="subtitle">Your trip</ThemedText>
+              <ThemedText type="subtitle">Your Trip</ThemedText>
               <Pressable
                 accessibilityRole="button"
                 onPress={() => setTripSheet('pickup')}
                 hitSlop={8}>
-                <Text style={[styles.edit, { color: theme.brand }]}>Edit</Text>
+                <Text style={[styles.edit, { color: theme.brandStrong }]}>Edit</Text>
               </Pressable>
             </View>
             <View style={styles.tripDates}>
@@ -285,7 +327,6 @@ export default function VehicleDetailScreen() {
                 onPress={() => setTripSheet('pickup')}
                 style={styles.tripDate}>
                 <View style={styles.tripCellHead}>
-                  <Ionicons name="calendar-outline" size={13} color={theme.textSecondary} />
                   <Text style={[styles.tripLabel, { color: theme.textSecondary }]}>Pick-up</Text>
                 </View>
                 <Text style={[styles.tripValue, { color: theme.text }]}>{formatWeekdayDay(window.pickupAt)}</Text>
@@ -296,7 +337,6 @@ export default function VehicleDetailScreen() {
                 onPress={() => setTripSheet('return')}
                 style={styles.tripDate}>
                 <View style={styles.tripCellHead}>
-                  <Ionicons name="calendar-outline" size={13} color={theme.textSecondary} />
                   <Text style={[styles.tripLabel, { color: theme.textSecondary }]}>Return</Text>
                 </View>
                 <Text style={[styles.tripValue, { color: theme.text }]}>{formatWeekdayDay(returnAt)}</Text>
@@ -331,17 +371,38 @@ export default function VehicleDetailScreen() {
               </ThemedText>
 
               <ThemedText type="heading" style={styles.tabHeading}>
-                Good to know
+                What&apos;s included
+              </ThemedText>
+              <View style={styles.terms}>
+                {includedFeatures(vehicle.category.slug).map((feature) => (
+                  <CheckLine key={feature} text={feature} />
+                ))}
+              </View>
+
+              <ThemedText type="heading" style={styles.tabHeading}>
+                Why book with SavariGo
               </ThemedText>
               <View style={styles.includeRow}>
-                <Include icon="checkmark-circle-outline" title="Serviced regularly" note="Hub-checked before every hand-over" />
                 <Include
-                  icon="navigate-outline"
-                  title={vehicle.mileageLimitKm ? `${vehicle.mileageLimitKm} km/day` : 'Unlimited km'}
-                  note={plan?.extraKmRate ? `${formatMoney(plan.extraKmRate)} per extra km` : 'Included in the rate'}
+                  icon="construct-outline"
+                  title="Well maintained vehicles"
+                  note="Serviced and sanitised before every trip."
                 />
-                <Include icon="shield-checkmark-outline" title="Verified vehicle" note={`Registered in ${vehicle.location.city}`} />
-                <Include icon="card-outline" title={`${formatMoney(vehicle.depositAmount)} deposit`} note="Refundable after return" />
+                <Include
+                  icon="ribbon-outline"
+                  title="Free helmet"
+                  note="ISI-marked helmets at no extra cost."
+                />
+                <Include
+                  icon="receipt-outline"
+                  title="No hidden charges"
+                  note="Deposit refunded within 3 working days."
+                />
+                <Include
+                  icon="headset-outline"
+                  title="24/7 support"
+                  note="Call, WhatsApp or chat — we pick up."
+                />
               </View>
 
               <ThemedText type="heading" style={styles.tabHeading}>
@@ -350,9 +411,11 @@ export default function VehicleDetailScreen() {
               <View style={styles.terms}>
                 <Term
                   text={
-                    vehicle.mileageLimitKm
-                      ? `${vehicle.mileageLimitKm} km/day included${plan?.extraKmRate ? `. Extra kilometres billed at ${formatMoney(plan.extraKmRate)}/km` : ''}.`
-                      : 'Unlimited kilometres on this ride.'
+                    vehicle.mileageLimitKm === null
+                      ? 'Unlimited kilometres on this ride.'
+                      : `${mileageLimitLabel(vehicle.mileageLimitKm)}${
+                          plan?.extraKmRate ? `, billed at ${formatMoney(plan.extraKmRate)} per extra km.` : '.'
+                        }`
                   }
                 />
                 <Term text={`Refundable security deposit of ${formatMoney(vehicle.depositAmount)} collected at pick-up.`} />
@@ -374,7 +437,7 @@ export default function VehicleDetailScreen() {
                     {vehicle.location.address || 'Puducherry'}
                   </Text>
                 </View>
-                <Ionicons name="shield-checkmark" size={20} color={theme.brand} />
+                <Ionicons name="shield-checkmark" size={20} color={theme.brandStrong} />
               </View>
             </View>
           ) : null}
@@ -382,14 +445,19 @@ export default function VehicleDetailScreen() {
           {tab === 'specs' ? (
             <View style={styles.tabBody}>
               <SpecRow label="Brand" value={vehicle.brand} />
-              <SpecRow label="Model year" value={String(vehicle.year)} />
+              <SpecRow label="Engine" value={vehicle.engine || '—'} />
+              <SpecRow
+                label={mileageLabel(vehicle.fuelType)}
+                value={
+                  vehicle.mileage ? compactMileage(vehicle.mileage, mileageLabel(vehicle.fuelType)) : '—'
+                }
+              />
               <SpecRow label="Transmission" value={vehicle.transmission === 'MANUAL' ? 'Manual' : 'Automatic'} />
               <SpecRow label="Fuel" value={vehicle.fuelType.charAt(0) + vehicle.fuelType.slice(1).toLowerCase()} />
-              <SpecRow label="Engine" value={vehicle.engine || '—'} />
-              <SpecRow label="Mileage" value={vehicle.mileage || '—'} />
               <SpecRow label="Seats" value={String(vehicle.seats)} />
-              <SpecRow label="Category" value={vehicle.category.name} />
-              <SpecRow label="Deposit" value={formatMoney(vehicle.depositAmount)} />
+              <SpecRow label="Year" value={String(vehicle.year)} />
+              <SpecRow label="Mileage limit" value={mileageLimitLabel(vehicle.mileageLimitKm)} />
+              <SpecRow label="Security deposit" value={formatMoney(vehicle.depositAmount)} />
               <SpecRow label="Pick-up hub" value={`${vehicle.location.name} · ${vehicle.location.city}`} />
             </View>
           ) : null}
@@ -438,7 +506,7 @@ export default function VehicleDetailScreen() {
                             key={star}
                             name={star <= Math.round(reviews.summary.average) ? 'star' : 'star-outline'}
                             size={14}
-                            color={theme.brand}
+                            color={theme.brandStrong}
                           />
                         ))}
                       </View>
@@ -471,6 +539,34 @@ export default function VehicleDetailScreen() {
               )}
             </View>
           ) : null}
+
+          {similar.length > 0 ? (
+            <View style={styles.similar}>
+              <View style={styles.similarHead}>
+                <ThemedText type="heading">Similar vehicles</ThemedText>
+                <Pressable
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  onPress={() =>
+                    router.push({ pathname: '/(tabs)/explore', params: { category: vehicle.category.slug } })
+                  }>
+                  <Text style={[styles.similarAll, { color: theme.brandStrong }]}>View all</Text>
+                </Pressable>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.similarRail}>
+                {similar.map((item) => (
+                  <RideTile
+                    key={item.id}
+                    vehicle={item}
+                    onPress={() => router.push({ pathname: '/vehicles/[slug]', params: { slug: item.slug } })}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          ) : null}
         </View>
       </ScrollView>
 
@@ -478,17 +574,26 @@ export default function VehicleDetailScreen() {
         <View style={styles.ctaText}>
           <View style={styles.ctaPriceRow}>
             <Text style={[styles.ctaPrice, { color: theme.text }]}>{formatMoney(vehicle.pricePerDay)}</Text>
-            <Text style={[styles.ctaPerDay, { color: theme.textSecondary }]}>/day</Text>
+            <Text style={[styles.ctaPerDay, { color: theme.textSecondary }]}>/ Day</Text>
           </View>
           <Text style={[styles.ctaNote, { color: theme.textSecondary }]}>
-            {formatMoney(total)} total incl. deposit
+            {formatMoney(vehicle.depositAmount)} refundable deposit
           </Text>
         </View>
         <Pressable
           accessibilityRole="button"
+          disabled={bookedOut}
           onPress={() => router.push({ pathname: '/checkout/[vehicleId]', params: { vehicleId: vehicle.id } })}
-          style={({ pressed }) => [styles.ctaButton, { backgroundColor: theme.brand, opacity: pressed ? 0.92 : 1 }]}>
-          <Text style={styles.ctaButtonText}>Book this ride</Text>
+          style={({ pressed }) => [
+            styles.ctaButton,
+            {
+              backgroundColor: bookedOut ? theme.backgroundSelected : theme.brand,
+              opacity: bookedOut ? 0.7 : pressed ? 0.92 : 1,
+            },
+          ]}>
+          <Text style={[styles.ctaButtonText, { color: bookedOut ? theme.textSecondary : theme.onBrand }]}>
+            {bookedOut ? 'Booked Out' : 'Book This Ride'}
+          </Text>
         </Pressable>
       </SafeAreaView>
 
@@ -535,7 +640,7 @@ function Include({ icon, title, note }: { icon: keyof typeof Ionicons.glyphMap; 
   const theme = useTheme();
   return (
     <View style={[styles.include, { borderColor: theme.line }]}>
-      <Ionicons name={icon} size={18} color={theme.brand} />
+      <Ionicons name={icon} size={18} color={theme.brandStrong} />
       <View style={styles.includeText}>
         <Text style={[styles.includeTitle, { color: theme.text }]}>{title}</Text>
         <Text style={[styles.includeNote, { color: theme.textSecondary }]}>{note}</Text>
@@ -550,6 +655,16 @@ function Term({ text }: { text: string }) {
     <View style={styles.term}>
       <Ionicons name="ellipse" size={5} color={theme.textSecondary} style={styles.termDot} />
       <Text style={[styles.termText, { color: theme.textSecondary }]}>{text}</Text>
+    </View>
+  );
+}
+
+function CheckLine({ text }: { text: string }) {
+  const theme = useTheme();
+  return (
+    <View style={styles.term}>
+      <Ionicons name="checkmark-circle-outline" size={16} color={theme.brandStrong} style={styles.checkDot} />
+      <Text style={[styles.termText, { color: theme.text }]}>{text}</Text>
     </View>
   );
 }
@@ -572,7 +687,7 @@ const styles = StyleSheet.create({
   retryText: { fontSize: 15, fontWeight: '800' },
   body: { paddingBottom: 120 },
   gallery: { position: 'relative' },
-  galleryImage: { height: 300, backgroundColor: '#e5eae1' },
+  galleryImage: { height: 300, backgroundColor: '#f1e7d2' },
   galleryFallback: { width: '100%' },
   galleryTop: {
     position: 'absolute',
@@ -588,12 +703,24 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: Spacing.three,
     bottom: Spacing.three,
-    backgroundColor: 'rgba(13,46,27,0.65)',
+    backgroundColor: 'rgba(36,36,36,0.68)',
     borderRadius: Radius.pill,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   galleryCounterText: { color: '#ffffff', fontSize: 12, fontWeight: '700' },
+  galleryDots: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
+  galleryDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.6)' },
+  galleryDotActive: { width: 16, backgroundColor: '#ffc400' },
   galleryActions: { flexDirection: 'row', gap: Spacing.two },
   galleryStatus: { position: 'absolute', left: Spacing.three, bottom: Spacing.three },
   statusPill: {
@@ -609,13 +736,13 @@ const styles = StyleSheet.create({
   thumbsTrack: { flexGrow: 0 },
   thumbs: { gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
   thumb: {
-    width: 64,
-    height: 56,
-    borderRadius: Radius.tile,
+    width: 52,
+    height: 44,
+    borderRadius: 12,
     borderWidth: 2,
     overflow: 'hidden',
   },
-  thumbImage: { width: '100%', height: '100%', backgroundColor: '#e5eae1' },
+  thumbImage: { width: '100%', height: '100%', backgroundColor: '#f1e7d2' },
   tripCellHead: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   pad: { paddingHorizontal: Spacing.three, gap: Spacing.three, paddingTop: Spacing.three },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
@@ -661,6 +788,7 @@ const styles = StyleSheet.create({
   terms: { gap: Spacing.two },
   term: { flexDirection: 'row', gap: Spacing.two },
   termDot: { marginTop: 7 },
+  checkDot: { marginTop: 3 },
   termText: { flex: 1, fontSize: 13, lineHeight: 19 },
   vendor: {
     flexDirection: 'row',
@@ -690,6 +818,10 @@ const styles = StyleSheet.create({
   stars: { flexDirection: 'row', gap: 2 },
   review: { borderWidth: 1, borderRadius: Radius.field, padding: Spacing.three, gap: 4 },
   reviewHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
+  similar: { gap: Spacing.three },
+  similarHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
+  similarAll: { fontSize: 13, fontWeight: '800' },
+  similarRail: { gap: Spacing.three, paddingRight: Spacing.three },
   cta: {
     position: 'absolute',
     left: 0,
@@ -709,5 +841,5 @@ const styles = StyleSheet.create({
   ctaPerDay: { fontSize: 13, fontWeight: '600' },
   ctaNote: { fontSize: 12 },
   ctaButton: { borderRadius: Radius.field, paddingHorizontal: 28, paddingVertical: 16 },
-  ctaButtonText: { color: '#ffffff', fontSize: 15, fontWeight: '800' },
+  ctaButtonText: { color: '#242424', fontSize: 15, fontWeight: '800' },
 });

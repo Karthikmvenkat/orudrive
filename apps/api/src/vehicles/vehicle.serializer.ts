@@ -49,6 +49,8 @@ export function serializeVehicle(
     reviewCount: vehicle.reviewCount,
     popular: vehicle.popular,
     mileageLimitKm: vehicle.mileageLimitKm,
+    luggageCapacity: vehicle.luggageCapacity,
+    ac: vehicle.ac,
     depositAmount: Number(vehicle.depositAmount),
     pricePerDay: Number(vehicle.fromPrice),
     category: {

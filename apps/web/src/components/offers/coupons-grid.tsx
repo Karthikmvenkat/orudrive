@@ -12,15 +12,24 @@ import { cn } from "@/lib/utils";
 const accents = {
   brand: {
     card: "from-brand-600 to-brand-500",
-    badge: "bg-white/20",
+    badge: "bg-ink/10",
+    text: "text-ink",
+    sub: "text-ink/70",
+    ring: "border-ink/10",
   },
   forest: {
-    card: "from-forest to-[#14452a]",
+    card: "from-forest to-ink",
     badge: "bg-brand-500/25",
+    text: "text-white",
+    sub: "text-white/70",
+    ring: "border-white/10",
   },
   amber: {
     card: "from-[#b06d0a] to-[#d99a2b]",
     badge: "bg-white/20",
+    text: "text-white",
+    sub: "text-white/80",
+    ring: "border-white/10",
   },
 } as const;
 
@@ -65,7 +74,7 @@ export function CouponsGrid() {
             className={cn(
               "rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition",
               filter === item.value
-                ? "border-brand-500 bg-brand-500 text-white"
+                ? "border-brand-500 bg-brand-500 text-ink"
                 : "border-line bg-surface text-ink-soft hover:border-brand-200 hover:text-brand-700",
             )}
           >
@@ -88,11 +97,17 @@ export function CouponsGrid() {
             >
               <div
                 className={cn(
-                  "relative bg-linear-to-br px-5 py-5 text-white",
+                  "relative bg-linear-to-br px-5 py-5",
                   accent.card,
+                  accent.text,
                 )}
               >
-                <div className="pointer-events-none absolute -right-8 -top-10 size-28 rounded-full border-[18px] border-white/10" />
+                <div
+                  className={cn(
+                    "pointer-events-none absolute -right-8 -top-10 size-28 rounded-full border-[18px]",
+                    accent.ring,
+                  )}
+                />
                 <div className="relative flex items-start justify-between gap-3">
                   <span className={cn("grid size-10 place-items-center rounded-xl", accent.badge)}>
                     <Tag className="size-5" />
@@ -106,7 +121,12 @@ export function CouponsGrid() {
                 <p className="relative mt-5 font-display text-[30px] font-extrabold leading-none tracking-[-0.03em]">
                   {coupon.type === "percent" ? `${coupon.value}% OFF` : `${inr(coupon.value)} OFF`}
                 </p>
-                <p className="relative mt-2 text-[12.5px] text-white/80">
+                <p
+                  className={cn(
+                    "relative mt-2 text-[12.5px]",
+                    accent.sub,
+                  )}
+                >
                   {coupon.maxDiscount
                     ? `Up to ${inr(coupon.maxDiscount)} on orders above ${inr(coupon.minOrder)}`
                     : `On orders above ${inr(coupon.minOrder)}`}
@@ -130,7 +150,7 @@ export function CouponsGrid() {
                     className={cn(
                       "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11.5px] font-semibold transition",
                       isCopied
-                        ? "bg-brand-500 text-white"
+                        ? "bg-brand-500 text-ink"
                         : "bg-white text-brand-700 shadow-soft hover:bg-brand-50",
                     )}
                   >

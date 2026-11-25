@@ -67,7 +67,7 @@ export function CategoriesSection() {
 
               {category.icon ? (
                 <div className="absolute -bottom-4 -right-4 grid size-32 place-items-center rounded-full bg-white/70 lg:size-36">
-                  <span className="grid size-20 place-items-center rounded-2xl bg-brand-500 text-white shadow-lift lg:size-24">
+                  <span className="grid size-20 place-items-center rounded-2xl bg-brand-500 text-ink shadow-lift lg:size-24">
                     {(() => {
                       const Icon = iconCards[category.icon];
                       return <Icon className="size-10 lg:size-12" strokeWidth={1.6} />;

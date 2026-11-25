@@ -2,26 +2,22 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, Linking, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
-import { CircleButton } from '@/components/kit';
+import { BrandLogo } from '@/components/brand-logo';
 import { ThemedText } from '@/components/themed-text';
-import { Badge, Button, Field, Screen, StateView } from '@/components/ui';
-import { CardShadow, Radius, Spacing } from '@/constants/theme';
+import { Button, Screen, StateView } from '@/components/ui';
+import { BottomTabInset, CardShadow, Radius, Spacing } from '@/constants/theme';
 import { useMyBookings } from '@/features/bookings/use-my-bookings';
 import { useTheme } from '@/hooks/use-theme';
 import { resolveMediaUrl } from '@/lib/api/config';
 import type { ApiBooking } from '@/lib/api/types';
-import { formatDay, formatDayYear, formatMoney, formatMoneyCompact } from '@/lib/format';
+import { formatDayYear, formatMoney, pluralize } from '@/lib/format';
 import { useSession } from '@/lib/session/context';
 
-type Tab = 'upcoming' | 'completed' | 'cancelled';
+const HEADER_PHOTO = require('../../../assets/images/home/bookings-header-road.png');
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'upcoming', label: 'Upcoming' },
-  { key: 'completed', label: 'Completed' },
-  { key: 'cancelled', label: 'Cancelled' },
-];
+type Tab = 'upcoming' | 'completed' | 'cancelled';
 
 const UPCOMING = new Set(['PENDING', 'CONFIRMED', 'ONGOING']);
 
@@ -30,15 +26,22 @@ function tabOf(booking: ApiBooking): Tab {
   return booking.status === 'COMPLETED' ? 'completed' : 'cancelled';
 }
 
-function pickupPhrase(iso: string): string {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const day = new Date(iso);
-  day.setHours(0, 0, 0, 0);
-  const diff = Math.round((day.getTime() - today.getTime()) / 86_400_000);
-  if (diff <= 0) return 'Pick-up today';
-  if (diff === 1) return 'Pick-up tomorrow';
-  return `Pick-up ${formatDay(iso)}`;
+function rentalLabel(category: string): string {
+  const c = category.toLowerCase();
+  if (c.includes('scooter') || c.includes('motorcycle') || c.includes('bike')) return 'Bike Rental';
+  if (c.includes('car')) return 'Car Rental';
+  if (c.includes('van') || c.includes('tempo')) return 'Van Rental';
+  return `${category.charAt(0).toUpperCase()}${category.slice(1)} Rental`;
+}
+
+function tripLine(booking: ApiBooking): string {
+  return `${formatDayYear(booking.pickupAt)} – ${formatDayYear(booking.returnAt)} (${pluralize(booking.durationDays, 'Day')})`;
+}
+
+function refundTotal(booking: ApiBooking): number {
+  return booking.payments
+    .flatMap((payment) => payment.refunds ?? [])
+    .reduce((sum, refund) => sum + refund.amount, 0);
 }
 
 function openDirections(booking: ApiBooking) {
@@ -51,8 +54,6 @@ export default function BookingsScreen() {
   const router = useRouter();
   const { status: sessionStatus } = useSession();
   const [tab, setTab] = useState<Tab>('upcoming');
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [query, setQuery] = useState('');
   const list = useMyBookings('all');
   const { reload } = list;
 
@@ -63,30 +64,44 @@ export default function BookingsScreen() {
   );
 
   const buckets = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    const matching = needle
-      ? list.items.filter(
-          (booking) =>
-            booking.vehicle.name.toLowerCase().includes(needle) ||
-            booking.code.toLowerCase().includes(needle),
-        )
-      : list.items;
     return {
-      upcoming: matching
+      upcoming: list.items
         .filter((booking) => tabOf(booking) === 'upcoming')
         .sort((a, b) => new Date(a.pickupAt).getTime() - new Date(b.pickupAt).getTime()),
-      completed: matching.filter((booking) => tabOf(booking) === 'completed'),
-      cancelled: matching.filter((booking) => tabOf(booking) === 'cancelled'),
+      completed: list.items
+        .filter((booking) => tabOf(booking) === 'completed')
+        .sort((a, b) => new Date(b.returnAt).getTime() - new Date(a.returnAt).getTime()),
+      cancelled: list.items
+        .filter((booking) => tabOf(booking) === 'cancelled')
+        .sort(
+          (a, b) =>
+            new Date(b.cancelledAt ?? b.updatedAt).getTime() -
+            new Date(a.cancelledAt ?? a.updatedAt).getTime(),
+        ),
     };
-  }, [list.items, query]);
+  }, [list.items]);
+
+  const chips: { key: Tab; label: string; icon: keyof typeof Ionicons.glyphMap; count: number }[] = [
+    { key: 'upcoming', label: 'Upcoming', icon: 'calendar', count: buckets.upcoming.length },
+    { key: 'completed', label: 'Completed', icon: 'checkmark-circle', count: buckets.completed.length },
+    { key: 'cancelled', label: 'Cancelled', icon: 'close-circle', count: buckets.cancelled.length },
+  ];
+
+  const openTicket = (booking: ApiBooking) =>
+    router.push({ pathname: '/booking/[code]', params: { code: booking.code } });
 
   const rows = buckets[tab];
-  const nextRide = tab === 'upcoming' ? (rows[0] ?? null) : null;
-  const rest = nextRide ? rows.slice(1) : rows;
 
   if (sessionStatus === 'signed-out') {
     return (
-      <Screen>
+      <Screen tabBarSpace={false}>
+        <BrandLogo scale={0.82} style={styles.brand} />
+        <ThemedText type="display" style={styles.pageTitle}>
+          My Bookings
+        </ThemedText>
+        <ThemedText type="body" themeColor="textSecondary" style={styles.pageSub}>
+          Manage all your vehicle rentals
+        </ThemedText>
         <View style={styles.signedOut}>
           <StateView state="empty" message="Sign in to see the bookings on your account." />
           <Button title="Sign in" onPress={() => router.push('/(auth)/login')} />
@@ -96,97 +111,111 @@ export default function BookingsScreen() {
   }
 
   return (
-    <Screen>
-      <View style={styles.head}>
-        <ThemedText type="title">My bookings</ThemedText>
-        <CircleButton
-          icon={searchOpen ? 'close' : 'search'}
-          label={searchOpen ? 'Close search' : 'Search bookings'}
-          onPress={() => {
-            setSearchOpen((open) => !open);
-            if (searchOpen) setQuery('');
-          }}
-        />
+    <Screen tabBarSpace={false}>
+      <View pointerEvents="none" style={styles.headerArt}>
+        <Image source={HEADER_PHOTO} style={styles.headerArtPhoto} contentFit="cover" />
+        <View style={styles.headerArtRim} />
       </View>
 
-      {searchOpen ? (
-        <Field
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search by vehicle or booking code"
-          autoFocus
-          autoCapitalize="characters"
-        />
-      ) : null}
+      <View style={styles.brandRow}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+          <Ionicons name="arrow-back" size={22} color={theme.text} />
+        </Pressable>
+        <BrandLogo scale={0.82} style={styles.brand} />
+      </View>
+      <ThemedText type="display" style={styles.pageTitle}>
+        My Bookings
+      </ThemedText>
+      <ThemedText type="body" themeColor="textSecondary" style={styles.pageSub}>
+        Manage all your vehicle rentals
+      </ThemedText>
 
-      <View style={[styles.segmented, { backgroundColor: theme.backgroundSelected }]}>
-        {TABS.map((entry) => {
-          const active = entry.key === tab;
+      <View style={styles.chips}>
+        {chips.map((chip) => {
+          const active = chip.key === tab;
           return (
             <Pressable
-              key={entry.key}
+              key={chip.key}
               accessibilityRole="tab"
               accessibilityState={{ selected: active }}
-              onPress={() => setTab(entry.key)}
+              onPress={() => setTab(chip.key)}
               style={[
-                styles.segment,
-                active && [styles.segmentActive, { backgroundColor: theme.backgroundElement }],
+                styles.chip,
+                active
+                  ? [styles.chipActive, { backgroundColor: theme.brand }]
+                  : [styles.chipIdle, { backgroundColor: theme.backgroundElement }],
               ]}>
+              <Ionicons name={chip.icon} size={14} color={active ? theme.onBrand : theme.text} />
               <ThemedText
                 type="smallBold"
-                style={[styles.segmentText, { color: active ? theme.brand : theme.textSecondary }]}>
-                {entry.label}
+                numberOfLines={1}
+                style={[styles.chipText, { color: active ? theme.onBrand : theme.text }]}>
+                {`${chip.label} (${chip.count})`}
               </ThemedText>
             </Pressable>
           );
         })}
       </View>
 
-      <FlatList
-        data={rest}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <BookingRow
-            booking={item}
-            onPress={() => router.push({ pathname: '/booking/[code]', params: { code: item.code } })}
-          />
-        )}
-        contentContainerStyle={styles.list}
+      <ScrollView
         showsVerticalScrollIndicator={false}
-        onEndReached={list.loadMore}
-        onEndReachedThreshold={0.4}
+        contentContainerStyle={styles.list}
         refreshControl={
-          <RefreshControl refreshing={list.status === 'loading'} onRefresh={list.reload} />
+          <RefreshControl refreshing={list.status === 'loading'} onRefresh={reload} />
         }
-        ListHeaderComponent={
-          nextRide ? (
-            <View style={styles.nextBlock}>
-              <NextRideCard
-                booking={nextRide}
-                onDirections={() => openDirections(nextRide)}
-                onTicket={() =>
-                  router.push({ pathname: '/booking/[code]', params: { code: nextRide.code } })
-                }
+        onScroll={() => list.loadMore()}
+        scrollEventThrottle={200}>
+        {list.status === 'error' && rows.length === 0 ? (
+          <StateView state="error" message={list.error} onRetry={reload} />
+        ) : rows.length === 0 && list.status !== 'loading' ? (
+          <StateView state="empty" message={EMPTY_COPY[tab]} />
+        ) : (
+          rows.map((booking) =>
+            tab === 'upcoming' ? (
+              <UpcomingCard
+                key={booking.id}
+                booking={booking}
+                onTicket={() => openTicket(booking)}
+                onDirections={() => openDirections(booking)}
               />
-              {rest.length > 0 ? (
-                <ThemedText type="label" themeColor="textSecondary">
-                  Coming up
-                </ThemedText>
-              ) : null}
-            </View>
-          ) : undefined
-        }
-        ListEmptyComponent={
-          nextRide ? undefined : list.status === 'loading' ? (
-            <StateView state="loading" />
-          ) : list.status === 'error' ? (
-            <StateView state="error" message={list.error} onRetry={list.reload} />
-          ) : (
-            <StateView state="empty" message={EMPTY_COPY[tab]} />
+            ) : tab === 'completed' ? (
+              <CompletedCard
+                key={booking.id}
+                booking={booking}
+                onOpen={() => openTicket(booking)}
+              />
+            ) : (
+              <CancelledCard
+                key={booking.id}
+                booking={booking}
+                onOpen={() => openTicket(booking)}
+                onRefunds={() => router.push('/payments')}
+              />
+            ),
           )
-        }
-        ListFooterComponent={list.status === 'paginating' ? <StateView state="loading" /> : undefined}
-      />
+        )}
+
+        {tab === 'upcoming' && buckets.completed.length > 0 ? (
+          <View style={styles.pastBlock}>
+            <View style={styles.pastHead}>
+              <Ionicons name="time" size={18} color={theme.accentGold} />
+              <ThemedText type="subtitle" style={styles.pastTitle}>
+                Past Bookings
+              </ThemedText>
+              <View style={[styles.pastRule, { backgroundColor: theme.line }]} />
+            </View>
+            {buckets.completed.map((booking) => (
+              <PastCard key={booking.id} booking={booking} onOpen={() => openTicket(booking)} />
+            ))}
+          </View>
+        ) : null}
+
+        {list.status === 'paginating' ? <StateView state="loading" /> : null}
+      </ScrollView>
     </Screen>
   );
 }
@@ -197,189 +226,530 @@ const EMPTY_COPY: Record<Tab, string> = {
   cancelled: 'Cancelled and uncollected bookings will show here.',
 };
 
-function NextRideCard({
-  booking,
-  onDirections,
-  onTicket,
-}: {
-  booking: ApiBooking;
-  onDirections: () => void;
-  onTicket: () => void;
-}) {
+function StatusPill({ booking }: { booking: ApiBooking }) {
+  const theme = useTheme();
+  const tab = tabOf(booking);
+  const icon =
+    tab === 'upcoming' ? 'calendar' : tab === 'completed' ? 'checkmark-circle' : 'close-circle';
+  const label = tab === 'upcoming' ? 'Upcoming' : tab === 'completed' ? 'Completed' : 'Cancelled';
+  const good = tab !== 'cancelled';
+  return (
+    <View style={[styles.pill, { backgroundColor: good ? theme.successSoft : '#fdecea' }]}>
+      <Ionicons name={icon} size={8} color={good ? theme.success : theme.danger} />
+      <ThemedText
+        style={[styles.pillText, { color: good ? theme.success : theme.danger }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.9}>
+        {label}
+      </ThemedText>
+    </View>
+  );
+}
+
+function Thumb({ booking, width, height }: { booking: ApiBooking; width: number; height: number }) {
   const theme = useTheme();
   const image = resolveMediaUrl(booking.vehicle.image);
-
   return (
-    <View style={[styles.nextCard, CardShadow, { backgroundColor: theme.backgroundElement }]}>
-      <View style={[styles.nextBand, { backgroundColor: theme.hero }]}>
-        <View style={styles.bandLeft}>
-          <View style={[styles.liveDot, { backgroundColor: theme.lime }]} />
-          <ThemedText type="smallBold" style={[styles.bandLabel, { color: theme.onHero }]}>
-            Your next ride
-          </ThemedText>
-        </View>
-        <ThemedText type="small" style={{ color: theme.onHeroMuted, fontWeight: '600' }}>
-          {pickupPhrase(booking.pickupAt)}
+    <View style={[styles.thumb, { width, height, backgroundColor: theme.background }]}>
+      {image ? (
+        <Image
+          source={{ uri: image }}
+          alt={`${booking.vehicle.name} booking`}
+          style={StyleSheet.absoluteFill}
+          contentFit="contain"
+          cachePolicy="memory-disk"
+        />
+      ) : null}
+    </View>
+  );
+}
+
+function Amount({ booking }: { booking: ApiBooking }) {
+  const theme = useTheme();
+  return (
+    <View style={styles.amountCol}>
+      <ThemedText style={[styles.amount, { color: theme.text }]}>
+        {formatMoney(booking.amounts.totalAmount)}
+      </ThemedText>
+      <ThemedText style={[styles.amountNote, { color: theme.textSecondary }]}>
+        Total Amount
+      </ThemedText>
+    </View>
+  );
+}
+
+function Facts({ booking }: { booking: ApiBooking }) {
+  const theme = useTheme();
+  return (
+    <View style={styles.facts}>
+      <View style={styles.factRow}>
+        <Ionicons name="calendar" size={9} color={theme.text} style={styles.factIcon} />
+        <ThemedText
+          style={[styles.factText, { color: theme.text }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.72}>
+          {tripLine(booking)}
         </ThemedText>
       </View>
+      <View style={styles.factRow}>
+        <Ionicons name="location" size={9} color={theme.textSecondary} style={styles.factIcon} />
+        <ThemedText style={[styles.factMuted, { color: theme.textSecondary }]} numberOfLines={1}>
+          {booking.pickupLocation.city}
+        </ThemedText>
+      </View>
+    </View>
+  );
+}
 
-      <View style={styles.nextBody}>
-        <View style={styles.nextHead}>
-          {image ? (
-            <Image
-              source={{ uri: image }}
-              alt={`${booking.vehicle.name} booking`}
-              style={styles.nextThumb}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-            />
-          ) : (
-            <View style={[styles.nextThumb, { backgroundColor: theme.backgroundSelected }]} />
-          )}
-          <View style={styles.nextTitle}>
-            <ThemedText type="subtitle" numberOfLines={2}>
-              {booking.vehicle.name}
-            </ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              Booking <ThemedText type="code">#{booking.code}</ThemedText>
-            </ThemedText>
-          </View>
-          <View style={styles.nextAmount}>
-            <ThemedText type="small" themeColor="textSecondary">
-              {booking.paymentStatus === 'PAID' ? 'Paid' : 'Pay at pick-up'}
-            </ThemedText>
-            <ThemedText type="subtitle">{formatMoney(booking.amounts.totalAmount)}</ThemedText>
-          </View>
+function UpcomingCard({
+  booking,
+  onTicket,
+  onDirections,
+}: {
+  booking: ApiBooking;
+  onTicket: () => void;
+  onDirections: () => void;
+}) {
+  const theme = useTheme();
+  return (
+    <View
+      style={[
+        styles.card,
+        CardShadow,
+        { backgroundColor: theme.backgroundElement, borderColor: '#f3dc9a' },
+      ]}>
+      <View style={styles.cardTop}>
+        <Thumb booking={booking} width={104} height={68} />
+        <View style={styles.cardCentre}>
+          <ThemedText
+            style={[styles.name, { color: theme.text }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}>
+            {booking.vehicle.name}
+          </ThemedText>
+          <ThemedText style={[styles.kind, { color: theme.textSecondary }]}>
+            {rentalLabel(booking.vehicle.category)}
+          </ThemedText>
+          <Facts booking={booking} />
         </View>
-
-        <View style={[styles.nextFacts, { backgroundColor: theme.background }]}>
-          <View style={styles.factRow}>
-            <Ionicons name="calendar-outline" size={17} color={theme.brand} />
-            <ThemedText type="small" style={styles.factText}>
-              {formatDayYear(booking.pickupAt)} – {formatDayYear(booking.returnAt)}
-            </ThemedText>
-          </View>
-          <View style={styles.factRow}>
-            <Ionicons name="location-outline" size={17} color={theme.brand} />
-            <ThemedText type="small" style={styles.factText}>
-              {booking.pickupLocation.name}
-            </ThemedText>
-          </View>
+        <View style={styles.cardSide}>
+          <StatusPill booking={booking} />
+          <Amount booking={booking} />
         </View>
+      </View>
+      <View style={[styles.strip, { backgroundColor: '#faf4e8' }]}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onTicket}
+          style={({ pressed }) => [styles.stripSeg, pressed && styles.pressed]}>
+          <Ionicons name="ticket" size={11} color={theme.text} />
+          <ThemedText
+            style={[styles.stripText, { color: theme.text }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}>
+            View Ticket
+          </ThemedText>
+        </Pressable>
+        <View style={[styles.stripDivider, { backgroundColor: theme.line }]} />
+        <Pressable
+          accessibilityRole="button"
+          onPress={onDirections}
+          style={({ pressed }) => [styles.stripSeg, pressed && styles.pressed]}>
+          <Ionicons name="location" size={11} color={theme.text} />
+          <ThemedText
+            style={[styles.stripText, { color: theme.text }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}>
+            Get Directions
+          </ThemedText>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onTicket}
+          style={({ pressed }) => [
+            styles.stripPill,
+            { backgroundColor: theme.brand },
+            pressed && styles.pressed,
+          ]}>
+          <ThemedText
+            style={[styles.stripPillText, { color: theme.onBrand }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.85}>
+            Manage Booking
+          </ThemedText>
+          <Ionicons name="arrow-forward" size={10} color={theme.onBrand} />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
 
-        <View style={styles.nextActions}>
-          <Button
-            title="Directions"
-            variant="secondary"
-            icon={<Ionicons name="navigate-outline" size={16} color={theme.text} />}
-            onPress={onDirections}
-            style={styles.nextAction}
+function PastCard({ booking, onOpen }: { booking: ApiBooking; onOpen: () => void }) {
+  const theme = useTheme();
+  return (
+    <View style={[styles.card, CardShadow, { backgroundColor: theme.backgroundElement }]}>
+      <View style={styles.cardTop}>
+        <Thumb booking={booking} width={96} height={66} />
+        <View style={styles.cardCentre}>
+          <ThemedText
+            style={[styles.nameSm, { color: theme.text }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}>
+            {booking.vehicle.name}
+          </ThemedText>
+          <ThemedText style={[styles.kind, { color: theme.textSecondary }]}>
+            {rentalLabel(booking.vehicle.category)}
+          </ThemedText>
+          <Facts booking={booking} />
+        </View>
+        <View style={styles.cardSide}>
+          <StatusPill booking={booking} />
+          <Amount booking={booking} />
+        </View>
+      </View>
+      <View style={[styles.strip, { backgroundColor: '#faf4e8' }]}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onOpen}
+          style={({ pressed }) => [styles.stripSeg, pressed && styles.pressed]}>
+          <Ionicons name="information-circle-outline" size={11} color={theme.text} />
+          <ThemedText
+            style={[styles.stripText, { color: theme.text }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}>
+            View Details
+          </ThemedText>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onOpen}
+          style={({ pressed }) => [styles.stripSegRight, pressed && styles.pressed]}>
+          <Ionicons name="star-outline" size={11} color={theme.text} />
+          <ThemedText
+            style={[styles.stripText, { color: theme.text }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}>
+            Rate Your Ride
+          </ThemedText>
+          <Ionicons name="chevron-forward" size={10} color={theme.textSecondary} />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+function CompletedCard({ booking, onOpen }: { booking: ApiBooking; onOpen: () => void }) {
+  const theme = useTheme();
+  return (
+    <View style={[styles.card, CardShadow, { backgroundColor: theme.backgroundElement }]}>
+      <View style={styles.cardTop}>
+        <View style={styles.leftCol}>
+          <StatusPill booking={booking} />
+          <Thumb booking={booking} width={96} height={66} />
+        </View>
+        <View style={styles.cardCentre}>
+          <ThemedText
+            style={[styles.nameSm, { color: theme.text }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}>
+            {booking.vehicle.name}
+          </ThemedText>
+          <ThemedText style={[styles.kind, { color: theme.textSecondary }]}>
+            {rentalLabel(booking.vehicle.category)}
+          </ThemedText>
+          <Facts booking={booking} />
+        </View>
+        <Amount booking={booking} />
+      </View>
+      <View style={[styles.strip, { backgroundColor: '#faf4e8' }]}>
+        <View style={styles.stripSeg}>
+          <Ionicons
+            name="star"
+            size={11}
+            color={booking.review ? theme.accentGold : theme.lineStrong}
           />
-          <Button
-            title="View ticket"
-            icon={<Ionicons name="chevron-forward" size={16} color="#ffffff" />}
-            onPress={onTicket}
-            style={styles.nextAction}
+          <ThemedText
+            style={[styles.stripText, { color: theme.text }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}>
+            {booking.review ? `You rated ${booking.review.rating.toFixed(1)}` : 'Not rated yet'}
+          </ThemedText>
+        </View>
+        <View style={[styles.stripDivider, { backgroundColor: theme.line }]} />
+        <Pressable
+          accessibilityRole="button"
+          onPress={onOpen}
+          style={({ pressed }) => [styles.stripSeg, pressed && styles.pressed]}>
+          <Ionicons name="document-text-outline" size={11} color={theme.text} />
+          <ThemedText
+            style={[styles.stripText, { color: theme.text }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}>
+            View Details
+          </ThemedText>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onOpen}
+          style={({ pressed }) => [
+            styles.stripPill,
+            { backgroundColor: theme.brand },
+            pressed && styles.pressed,
+          ]}>
+          <Ionicons name="star-outline" size={10} color={theme.onBrand} />
+          <ThemedText style={[styles.stripPillText, { color: theme.onBrand }]}>
+            Rate Again
+          </ThemedText>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+function CancelledCard({
+  booking,
+  onOpen,
+  onRefunds,
+}: {
+  booking: ApiBooking;
+  onOpen: () => void;
+  onRefunds: () => void;
+}) {
+  const theme = useTheme();
+  const refunded = refundTotal(booking);
+  return (
+    <View style={[styles.card, CardShadow, { backgroundColor: theme.backgroundElement }]}>
+      <View style={styles.cardTop}>
+        <View style={styles.leftCol}>
+          <StatusPill booking={booking} />
+          <Thumb booking={booking} width={96} height={66} />
+        </View>
+        <View style={styles.cardCentre}>
+          <ThemedText
+            style={[styles.nameSm, { color: theme.text }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}>
+            {booking.vehicle.name}
+          </ThemedText>
+          <ThemedText style={[styles.kind, { color: theme.textSecondary }]}>
+            {rentalLabel(booking.vehicle.category)}
+          </ThemedText>
+          <Facts booking={booking} />
+        </View>
+        <Amount booking={booking} />
+      </View>
+      {booking.cancelledAt ? (
+        <View style={[styles.notice, { backgroundColor: '#fdecea' }]}>
+          <Ionicons name="information-circle" size={11} color={theme.danger} />
+          <ThemedText style={[styles.noticeText, { color: theme.text }]} numberOfLines={1}>
+            {`This booking was cancelled on ${formatDayYear(booking.cancelledAt)}.`}
+          </ThemedText>
+        </View>
+      ) : null}
+      <View style={[styles.strip, { backgroundColor: '#faf4e8' }]}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onOpen}
+          style={({ pressed }) => [styles.stripSeg, pressed && styles.pressed]}>
+          <Ionicons name="document-text-outline" size={11} color={theme.text} />
+          <ThemedText
+            style={[styles.stripText, { color: theme.text }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}>
+            View Details
+          </ThemedText>
+        </Pressable>
+        <View style={[styles.stripDivider, { backgroundColor: theme.line }]} />
+        <Pressable
+          accessibilityRole="button"
+          onPress={onRefunds}
+          style={({ pressed }) => [styles.stripSeg, pressed && styles.pressed]}>
+          <Ionicons name="refresh" size={11} color={theme.text} />
+          <ThemedText
+            style={[styles.stripText, { color: theme.text }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}>
+            Refund Status
+          </ThemedText>
+        </Pressable>
+        <View
+          style={[
+            styles.refundBox,
+            { backgroundColor: refunded > 0 ? theme.successSoft : theme.backgroundSelected },
+          ]}>
+          <Ionicons
+            name={refunded > 0 ? 'checkmark-circle' : 'help-circle-outline'}
+            size={10}
+            color={refunded > 0 ? theme.success : theme.textSecondary}
           />
+          <ThemedText
+            style={[
+              styles.refundText,
+              { color: refunded > 0 ? theme.success : theme.textSecondary },
+            ]}>
+            {refunded > 0 ? formatMoney(refunded) : 'No refund'}
+          </ThemedText>
         </View>
       </View>
     </View>
   );
 }
 
-function BookingRow({ booking, onPress }: { booking: ApiBooking; onPress: () => void }) {
-  const theme = useTheme();
-  const image = resolveMediaUrl(booking.vehicle.image);
-  const tab = tabOf(booking);
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${booking.vehicle.name}, booking ${booking.code}`}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        CardShadow,
-        { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.94 : 1 },
-      ]}>
-      {image ? (
-        <Image
-          source={{ uri: image }}
-          alt={`${booking.vehicle.name} booking`}
-          style={styles.rowThumb}
-          contentFit="cover"
-          cachePolicy="memory-disk"
-        />
-      ) : (
-        <View style={[styles.rowThumb, { backgroundColor: theme.backgroundSelected }]} />
-      )}
-      <View style={styles.rowText}>
-        <ThemedText type="smallBold" style={styles.rowName} numberOfLines={1}>
-          {booking.vehicle.name}
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-          #{booking.code} · {formatDay(booking.pickupAt)}
-        </ThemedText>
-      </View>
-      <View style={styles.rowSide}>
-        <Badge
-          text={tab === 'upcoming' ? 'Upcoming' : tab === 'completed' ? 'Completed' : 'Cancelled'}
-          tone={tab === 'upcoming' ? 'info' : tab === 'completed' ? 'neutral' : 'bad'}
-        />
-        <ThemedText type="subtitle" style={styles.rowAmount}>
-          {formatMoneyCompact(booking.amounts.totalAmount)}
-        </ThemedText>
-      </View>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three },
-  signedOut: { gap: Spacing.three },
-  segmented: { flexDirection: 'row', padding: 5, borderRadius: Radius.pill, gap: 4 },
-  segment: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: Radius.pill },
-  segmentActive: {
-    shadowColor: '#0d2e1b',
-    shadowOpacity: 0.08,
+  headerArt: {
+    position: 'absolute',
+    top: -36,
+    right: -18,
+    width: 205,
+    height: 148,
+    borderBottomLeftRadius: 205,
+    overflow: 'hidden',
+    backgroundColor: '#f6d78b',
+  },
+  headerArtPhoto: { width: '100%', height: '100%' },
+  headerArtRim: {
+    position: 'absolute',
+    top: -118,
+    left: -66,
+    width: 245,
+    height: 190,
+    borderRadius: 110,
+    backgroundColor: '#ffc400',
+    borderWidth: 3,
+    borderColor: 'rgba(255,249,237,0.85)',
+  },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  backButton: {
+    width: 30,
+    height: 30,
+    marginLeft: -6,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  brand: { alignSelf: 'flex-start', flexShrink: 1 },
+  pageTitle: { fontSize: 26, fontWeight: '800', letterSpacing: -0.5, marginTop: 6 },
+  pageSub: { fontSize: 14, marginTop: 1 },
+  signedOut: { gap: Spacing.three, marginTop: Spacing.three },
+  chips: { flexDirection: 'row', gap: 7, marginTop: 14 },
+  chip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 12,
+    borderRadius: Radius.pill,
+  },
+  chipActive: {
+    shadowColor: '#242424',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  chipIdle: {
+    borderWidth: 1,
+    borderColor: '#f0ead8',
+    shadowColor: '#242424',
+    shadowOpacity: 0.05,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
     elevation: 1,
   },
-  segmentText: { fontSize: 14 },
-  list: { gap: Spacing.three, paddingBottom: Spacing.six },
-  nextBlock: { gap: Spacing.three },
-  nextCard: { borderRadius: Radius.card, overflow: 'hidden' },
-  nextBand: {
+  chipText: { fontSize: 12 },
+  list: { gap: 12, paddingTop: 14, paddingBottom: BottomTabInset + Spacing.four },
+  card: { borderRadius: 16, borderWidth: 1, borderColor: 'transparent', padding: 7, gap: 4 },
+  cardTop: { flexDirection: 'row', gap: 12 },
+  cardCentre: { flex: 1, minWidth: 0, gap: 4, justifyContent: 'flex-start' },
+  cardSide: { alignItems: 'flex-end', gap: 10, flexShrink: 0 },
+  leftCol: { gap: 4, alignItems: 'flex-start', flexShrink: 0 },
+  thumb: { borderRadius: 10, overflow: 'hidden' },
+  name: { fontSize: 11, lineHeight: 14, fontWeight: '800' },
+  nameSm: { fontSize: 10.5, lineHeight: 13, fontWeight: '800' },
+  kind: { fontSize: 8, lineHeight: 10, fontWeight: '600' },
+  facts: { gap: 3 },
+  factRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  factIcon: { width: 10 },
+  factText: { fontSize: 8, lineHeight: 11, fontWeight: '700', flexShrink: 1 },
+  factMuted: { fontSize: 8, lineHeight: 11, fontWeight: '600', flexShrink: 1 },
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: 12,
+    gap: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: Radius.pill,
   },
-  bandLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  bandLabel: { letterSpacing: 1.2, textTransform: 'uppercase' },
-  liveDot: { width: 9, height: 9, borderRadius: 5 },
-  nextBody: { padding: Spacing.three, gap: Spacing.three },
-  nextHead: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.three },
-  nextThumb: { width: 76, height: 64, borderRadius: Radius.field },
-  nextTitle: { flex: 1, gap: 3 },
-  nextAmount: { alignItems: 'flex-end', gap: 1 },
-  nextFacts: { borderRadius: Radius.field, padding: Spacing.three, gap: Spacing.two },
-  factRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  factText: { fontWeight: '600' },
-  nextActions: { flexDirection: 'row', gap: Spacing.two },
-  nextAction: { flex: 1 },
-  row: {
+  pillText: { fontSize: 7, lineHeight: 10, fontWeight: '700' },
+  amountCol: { alignItems: 'flex-end', gap: 1 },
+  amount: { fontSize: 12, lineHeight: 15, fontWeight: '800', letterSpacing: -0.3 },
+  amountNote: { fontSize: 7, lineHeight: 9, fontWeight: '600' },
+  strip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
-    borderRadius: Radius.card,
-    padding: Spacing.three,
+    borderRadius: 10,
+    paddingLeft: 6,
+    paddingRight: 4,
+    minHeight: 32,
+    gap: 3,
   },
-  rowThumb: { width: 64, height: 64, borderRadius: Radius.field },
-  rowText: { flex: 1, gap: 3 },
-  rowName: { fontSize: 15 },
-  rowSide: { alignItems: 'flex-end', gap: 6 },
-  rowAmount: { fontSize: 16 },
+  stripSeg: { flexDirection: 'row', alignItems: 'center', gap: 3, flex: 1 },
+  stripSegRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  stripDivider: { width: 1, height: 14 },
+  stripText: { fontSize: 8, lineHeight: 11, fontWeight: '700', flexShrink: 1 },
+  stripPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  stripPillText: { fontSize: 8, lineHeight: 11, fontWeight: '800', flexShrink: 1 },
+  notice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  noticeText: { fontSize: 8, lineHeight: 11, fontWeight: '600', flex: 1 },
+  refundBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  refundText: { fontSize: 8, lineHeight: 11, fontWeight: '800' },
+  pastBlock: { gap: 10, marginTop: 6 },
+  pastHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  pastTitle: { fontSize: 17, fontWeight: '800' },
+  pastRule: { flex: 1, height: 1 },
+  pressed: { opacity: 0.85 },
 });

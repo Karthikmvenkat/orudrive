@@ -47,7 +47,7 @@ export function VehicleCard({
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-3">
           <div className="flex flex-wrap gap-1.5">
             {off > 0 && (
-              <span className="pointer-events-auto rounded-full bg-brand-500 px-2.5 py-1 text-[10.5px] font-bold text-white shadow-sm">
+              <span className="pointer-events-auto rounded-full bg-brand-500 px-2.5 py-1 text-[10.5px] font-bold text-ink shadow-sm">
                 Save {off}%
               </span>
             )}
@@ -123,7 +123,7 @@ export function VehicleCard({
             className={cn(
               "inline-flex h-9 items-center justify-center rounded-full px-4 text-[12.5px] font-semibold transition",
               vehicle.available
-                ? "bg-brand-500 text-white hover:bg-brand-600"
+                ? "bg-brand-500 text-ink hover:bg-brand-600"
                 : "border border-line-strong text-ink-soft hover:bg-page",
             )}
           >

@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   ActivityIndicator,
   Pressable,
@@ -26,11 +27,23 @@ type ScreenProps = Omit<ViewProps, 'style'> & {
   padded?: boolean;
 };
 
+/** The warm yellow light that sits behind every screen's header. */
+export function PageGlow() {
+  return (
+    <LinearGradient
+      colors={['rgba(255,196,0,0.22)', 'rgba(255,249,237,0)']}
+      style={styles.glow}
+      pointerEvents="none"
+    />
+  );
+}
+
 export function Screen({ children, style, tabBarSpace = true, padded = true, ...rest }: ScreenProps) {
   const theme = useTheme();
   return (
     <ThemedView style={[styles.screen, { backgroundColor: theme.background }]} {...rest}>
       <SafeAreaView style={styles.screen}>
+        <PageGlow />
         <View
           style={[
             styles.body,
@@ -114,10 +127,10 @@ export function Badge({ text, tone = 'neutral' }: { text: string; tone?: Tone })
   const theme = useTheme();
   const palette: Record<Tone, { background: string; foreground: string }> = {
     neutral: { background: theme.backgroundSelected, foreground: theme.textSecondary },
-    good: { background: theme.brandSoft, foreground: theme.brandStrong },
+    good: { background: theme.successSoft, foreground: theme.success },
     warn: { background: theme.warning, foreground: '#ffffff' },
     bad: { background: theme.danger, foreground: '#ffffff' },
-    brand: { background: theme.brand, foreground: '#ffffff' },
+    brand: { background: theme.brand, foreground: theme.onBrand },
     info: { background: theme.accentBlue, foreground: theme.accentBlueText },
   };
   const colors = palette[tone];
@@ -132,7 +145,7 @@ export function Badge({ text, tone = 'neutral' }: { text: string; tone?: Tone })
 
 type ButtonProps = Omit<PressableProps, 'children'> & {
   title: string;
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'hero';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'hero' | 'service';
   loading?: boolean;
   icon?: React.ReactNode;
 };
@@ -154,11 +167,12 @@ export function Button({
     NonNullable<ButtonProps['variant']>,
     { background: string; border: string; text: string }
   > = {
-    primary: { background: theme.brand, border: theme.brand, text: '#ffffff' },
+    primary: { background: theme.brand, border: theme.brand, text: theme.onBrand },
     secondary: { background: theme.backgroundElement, border: theme.lineStrong, text: theme.text },
     ghost: { background: 'transparent', border: 'transparent', text: theme.brandStrong },
     danger: { background: theme.danger, border: theme.danger, text: '#ffffff' },
     hero: { background: theme.hero, border: theme.hero, text: theme.lime },
+    service: { background: theme.service, border: theme.service, text: theme.serviceOn },
   };
   const surface = surfaces[variant];
 
@@ -229,7 +243,7 @@ export function Field({
   return (
     <View style={[styles.field, style]}>
       {label ? (
-        <ThemedText type="label" themeColor="textSecondary">
+        <ThemedText type="small" style={styles.fieldLabel}>
           {label}
         </ThemedText>
       ) : null}
@@ -314,7 +328,7 @@ export function StateView({
   if (state === 'loading') {
     return (
       <View style={styles.state}>
-        <ActivityIndicator color={theme.brand} />
+        <ActivityIndicator color={theme.brandStrong} />
       </View>
     );
   }
@@ -330,6 +344,7 @@ export function StateView({
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  glow: { position: 'absolute', top: 0, left: 0, right: 0, height: 240 },
   body: { flex: 1, gap: Spacing.three, alignSelf: 'center', width: '100%', maxWidth: MaxContentWidth },
   section: { gap: Spacing.two },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three },
@@ -365,6 +380,7 @@ const styles = StyleSheet.create({
   },
   buttonText: { fontSize: 16, fontWeight: '800' },
   field: { gap: 6 },
+  fieldLabel: { fontSize: 14, lineHeight: 18, fontWeight: '700' },
   inputShell: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -66,6 +66,8 @@ export interface ApiVehicle {
   reviewCount: number;
   popular: boolean;
   mileageLimitKm: number | null;
+  luggageCapacity: number | null;
+  ac: boolean | null;
   depositAmount: number;
   pricePerDay: number;
   category: CatalogRef;

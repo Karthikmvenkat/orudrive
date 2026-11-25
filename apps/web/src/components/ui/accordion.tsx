@@ -36,7 +36,7 @@ const AccordionTrigger = React.forwardRef<
       {...props}
     >
       {children}
-      <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-page text-muted transition-transform duration-300 group-data-[state=open]:rotate-45 group-data-[state=open]:bg-brand-500 group-data-[state=open]:text-white">
+      <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-page text-muted transition-transform duration-300 group-data-[state=open]:rotate-45 group-data-[state=open]:bg-brand-500 group-data-[state=open]:text-ink">
         <Plus className="size-3.5" />
       </span>
     </AccordionPrimitive.Trigger>

@@ -42,7 +42,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#4caf2b",
+  themeColor: "#ffc400",
   width: "device-width",
   initialScale: 1,
 };
@@ -66,7 +66,7 @@ export default function RootLayout({
             className: "font-sans",
             style: {
               borderRadius: "12px",
-              border: "1px solid #e5eae1",
+              border: "1px solid #eae5da",
             },
           }}
         />

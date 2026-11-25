@@ -79,7 +79,7 @@ function PaymentRow({ payment }: { payment: ApiPayment }) {
 
       {payment.refunds?.map((refund) => (
         <View key={refund.id} style={[styles.refund, { borderColor: theme.line }]}>
-          <Ionicons name="return-down-back-outline" size={16} color={theme.brand} />
+          <Ionicons name="return-down-back-outline" size={16} color={theme.brandStrong} />
           <ThemedText type="small" style={styles.refundText}>
             Refund {formatMoney(refund.amount)} · {refund.status.toLowerCase()}
             {refund.reason ? ` · ${refund.reason}` : ''}

@@ -18,7 +18,7 @@ const qrCells = Array.from({ length: 21 * 21 }, (_, i) => {
 export function AppDownloadSection() {
   return (
     <section className="container-page pb-4 pt-6 lg:pb-10">
-      <div className="relative overflow-hidden rounded-[26px] bg-tint-mint px-5 py-8 sm:px-8 lg:px-10 lg:py-0">
+      <div className="relative overflow-hidden rounded-[26px] bg-brand-50 px-5 py-8 sm:px-8 lg:px-10 lg:py-0">
         <div className="pointer-events-none absolute -left-20 top-0 size-72 rounded-full bg-brand-100/70 blur-2xl" />
 
         <div className="relative grid items-end gap-8 lg:grid-cols-[300px_1fr_220px]">
@@ -38,7 +38,7 @@ export function AppDownloadSection() {
                     <span className="text-[8.5px] font-semibold text-brand-700">
                       Active booking
                     </span>
-                    <span className="rounded-full bg-brand-500 px-1.5 py-0.5 text-[7px] font-bold text-white">
+                    <span className="rounded-full bg-brand-500 px-1.5 py-0.5 text-[7px] font-bold text-ink">
                       Upcoming
                     </span>
                   </div>
@@ -46,7 +46,7 @@ export function AppDownloadSection() {
                   <p className="text-[8px] text-muted">10 Nov · 10:00 AM · Puducherry</p>
                   <div className="mt-2 flex items-center justify-between">
                     <span className="text-[10px] font-bold text-ink">₹499</span>
-                    <span className="rounded-full bg-brand-500 px-2 py-0.5 text-[7.5px] font-semibold text-white">
+                    <span className="rounded-full bg-brand-500 px-2 py-0.5 text-[7.5px] font-semibold text-ink">
                       View details
                     </span>
                   </div>
@@ -93,7 +93,7 @@ export function AppDownloadSection() {
                   key={feature}
                   className="flex items-center gap-2 text-[12.5px] font-medium text-ink-soft"
                 >
-                  <span className="grid size-4 place-items-center rounded-full bg-brand-500 text-white">
+                  <span className="grid size-4 place-items-center rounded-full bg-brand-500 text-ink">
                     <Check className="size-2.5" strokeWidth={3} />
                   </span>
                   {feature}

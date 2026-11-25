@@ -149,7 +149,7 @@ export function VehicleWizard({
                       current
                         ? "bg-white/20 text-white"
                         : done
-                          ? "bg-brand-500 text-white"
+                          ? "bg-brand-500 text-ink"
                           : "bg-page text-muted",
                     )}
                   >

@@ -38,9 +38,9 @@ export function HowItWorksSection({
           return (
             <Reveal key={step.step} delay={i * 0.08} className="relative">
               <div className="flex flex-col items-center text-center">
-                <div className="relative grid size-14 place-items-center rounded-full border border-brand-200 bg-white text-brand-600 shadow-[0_10px_24px_-16px_rgba(76,175,43,0.8)]">
+                <div className="relative grid size-14 place-items-center rounded-full border border-brand-200 bg-white text-brand-600 shadow-[0_10px_24px_-16px_rgba(255,196,0,0.8)]">
                   <Icon className="size-6" strokeWidth={1.8} />
-                  <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-brand-500 text-[9px] font-bold text-white">
+                  <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-brand-500 text-[9px] font-bold text-ink">
                     {step.step}
                   </span>
                 </div>

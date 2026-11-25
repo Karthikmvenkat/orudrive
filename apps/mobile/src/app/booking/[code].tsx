@@ -8,7 +8,7 @@ import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { Sheet } from '@/components/kit';
 import { ThemedText } from '@/components/themed-text';
 import { Badge, Button, Field, Screen, StateView } from '@/components/ui';
-import { Radius, Spacing } from '@/constants/theme';
+import { CardShadow, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { resolveMediaUrl } from '@/lib/api/config';
 import { bookingApi } from '@/lib/api/endpoints';
@@ -86,7 +86,7 @@ export default function BookingTicketScreen() {
         <View style={styles.hero}>
           <View style={[styles.ring, { backgroundColor: cancelled ? theme.backgroundSelected : theme.brandSoft }]}>
             <View style={[styles.circle, { backgroundColor: cancelled ? theme.danger : theme.brand }]}>
-              <Ionicons name={cancelled ? 'close' : 'checkmark'} size={34} color="#ffffff" />
+              <Ionicons name={cancelled ? 'close' : 'checkmark'} size={34} color={cancelled ? '#ffffff' : theme.onBrand} />
             </View>
           </View>
           <ThemedText type="display" style={styles.heroTitle}>
@@ -97,7 +97,7 @@ export default function BookingTicketScreen() {
           </ThemedText>
         </View>
 
-        <View style={[styles.ticket, { backgroundColor: theme.backgroundElement }]}>
+        <View style={[styles.ticket, CardShadow, { backgroundColor: theme.backgroundElement }]}>
           <View style={styles.ticketHead}>
             {image ? (
               <Image
@@ -120,7 +120,7 @@ export default function BookingTicketScreen() {
             </View>
             <Badge
               text={statusBadge}
-              tone={cancelled ? 'bad' : completed ? 'neutral' : 'info'}
+              tone={cancelled ? 'bad' : completed ? 'good' : 'info'}
             />
           </View>
 
@@ -142,7 +142,7 @@ export default function BookingTicketScreen() {
 
           <View style={[styles.codeBlock, { backgroundColor: theme.background }]}>
             <View style={styles.codeBox}>
-              <QRCode value={row.code} size={88} color="#0F1A14" backgroundColor="#ffffff" />
+              <QRCode value={row.code} size={88} color="#242424" backgroundColor="#ffffff" />
             </View>
             <View style={styles.codeCopy}>
               <ThemedText type="smallBold" style={styles.codeTitle}>
@@ -172,7 +172,7 @@ export default function BookingTicketScreen() {
           />
           <Button
             title="My bookings"
-            icon={<Ionicons name="ticket-outline" size={17} color="#ffffff" />}
+            icon={<Ionicons name="ticket-outline" size={17} color={theme.onBrand} />}
             onPress={() => router.push('/(tabs)/bookings')}
             style={styles.action}
           />

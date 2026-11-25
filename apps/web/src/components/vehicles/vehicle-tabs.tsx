@@ -66,7 +66,7 @@ export function VehicleTabs({ vehicle }: { vehicle: Vehicle }) {
                 key={feature}
                 className="flex items-center gap-2 rounded-lg border border-line bg-page/50 px-3 py-2.5 text-[12.5px] text-ink-soft"
               >
-                <span className="grid size-4 place-items-center rounded-full bg-brand-500 text-white">
+                <span className="grid size-4 place-items-center rounded-full bg-brand-500 text-ink">
                   <Check className="size-2.5" strokeWidth={3} />
                 </span>
                 {feature}
@@ -128,7 +128,7 @@ export function VehicleTabs({ vehicle }: { vehicle: Vehicle }) {
                 }
               >
                 {i === 1 && (
-                  <span className="absolute -top-2.5 left-4 rounded-full bg-brand-500 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-white">
+                  <span className="absolute -top-2.5 left-4 rounded-full bg-brand-500 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-ink">
                     Most popular
                   </span>
                 )}

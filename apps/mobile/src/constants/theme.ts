@@ -1,33 +1,47 @@
 /**
- * SavariGo palette, taken from the shipped mobile design: a deep forest hero,
- * a vivid green action colour and a lime accent, on a warm off-white page.
+ * SavariGo palette: taxi-sign yellow on warm ivory, charcoal ink, soft pastels.
+ * Yellow is a fill colour only — labels on it are charcoal. Green/blue/teal are
+ * status colours, never brand colours.
  */
 
 import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    text: '#10231a',
-    background: '#f5f8f2',
+    text: '#242424',
+    background: '#fff9ed',
     backgroundElement: '#ffffff',
-    backgroundSelected: '#eef6e7',
-    textSecondary: '#66786b',
-    brand: '#1f7a3a',
-    brandStrong: '#14532a',
-    brandSoft: '#eaf4e2',
-    line: '#e6ece0',
-    lineStrong: '#d5dfcd',
-    hero: '#0d2e1b',
-    heroSoft: '#17452a',
+    backgroundSelected: '#f9f1df',
+    textSecondary: '#737373',
+    brand: '#ffc400',
+    onBrand: '#242424',
+    /** Golden text tone for small links/labels on ivory (contrast-safe). */
+    brandStrong: '#8a6400',
+    /** Brighter gold for illustration icons on cream cards. */
+    accentGold: '#e09400',
+    brandSoft: '#fff1c2',
+    line: '#eae5da',
+    lineStrong: '#dcd5c6',
+    hero: '#242424',
+    heroSoft: '#333333',
     onHero: '#ffffff',
     onHeroMuted: 'rgba(255,255,255,0.72)',
-    lime: '#c9f16b',
-    limeOn: '#10301c',
-    accentBlue: '#e8f2fb',
-    accentBlueText: '#1f5f96',
-    warning: '#d97706',
-    danger: '#c0392b',
-    info: '#e8f2fb',
+    /** Yellow accent for dark surfaces; the historical name is kept for call sites. */
+    lime: '#ffc400',
+    limeOn: '#242424',
+    /** Status/info chip only; blue never carries the brand. */
+    accentBlue: '#e9effb',
+    accentBlueText: '#2f4f8b',
+    warning: '#b45309',
+    danger: '#c62828',
+    info: '#faf1de',
+    success: '#2e7d4f',
+    successSoft: '#e8f3ea',
+    /** Services use a warm terracotta accent so a repair never reads as a rental. */
+    service: '#9a4a18',
+    serviceStrong: '#7a370f',
+    serviceSoft: '#fce3d6',
+    serviceOn: '#ffffff',
   },
 } as const;
 
@@ -62,11 +76,11 @@ export const Radius = {
   tile: 18,
 } as const;
 
-/** White cards float on the page without a hard border. */
+/** White cards float on the ivory page with a charcoal-tinted shadow. */
 export const CardShadow = Platform.select({
   ios: {
-    shadowColor: '#0d2e1b',
-    shadowOpacity: 0.06,
+    shadowColor: '#242424',
+    shadowOpacity: 0.07,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
   },

@@ -10,10 +10,10 @@ export default function AuthLayout() {
       }}>
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="verify" options={{ headerShown: false }} />
-      <Stack.Screen name="email" options={{ title: 'Sign in with e-mail' }} />
-      <Stack.Screen name="register" options={{ title: 'Create account' }} />
-      <Stack.Screen name="verify-email" options={{ title: 'Verify e-mail' }} />
-      <Stack.Screen name="forgot-password" options={{ title: 'Reset password' }} />
+      <Stack.Screen name="email" options={{ headerShown: false }} />
+      <Stack.Screen name="register" options={{ headerShown: false }} />
+      <Stack.Screen name="verify-email" options={{ headerShown: false }} />
+      <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
     </Stack>
   );
 }

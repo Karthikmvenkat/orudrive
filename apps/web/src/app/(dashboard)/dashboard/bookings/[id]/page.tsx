@@ -110,7 +110,7 @@ export default async function BookingDetailPage({
                         <span
                           className={`relative z-10 grid size-8 shrink-0 place-items-center rounded-full border-2 text-[11px] font-bold transition ${
                             done
-                              ? "border-brand-500 bg-brand-500 text-white"
+                              ? "border-brand-500 bg-brand-500 text-ink"
                               : "border-line-strong bg-white text-muted"
                           }`}
                         >

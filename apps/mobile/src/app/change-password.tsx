@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 
+import { PageHeader } from '@/components/kit';
 import { ThemedText } from '@/components/themed-text';
 import { Button, Card, Field, Screen } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
@@ -50,7 +51,11 @@ export default function ChangePasswordScreen() {
 
   return (
     <Screen tabBarSpace={false} style={styles.body}>
-      <ThemedText type="title">Change password</ThemedText>
+      <PageHeader
+        title="Change password"
+        subtitle="Keep your account secure"
+        onBack={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/profile'))}
+      />
 
       {done ? (
         <Card>

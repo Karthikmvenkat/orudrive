@@ -28,7 +28,7 @@ export function CircleButton({
   size?: number;
 }) {
   const theme = useTheme();
-  const background = tone === 'dark' ? 'rgba(13,46,27,0.72)' : theme.backgroundElement;
+  const background = tone === 'dark' ? 'rgba(36,36,36,0.66)' : theme.backgroundElement;
   const color = tone === 'dark' ? '#ffffff' : theme.text;
   return (
     <Pressable
@@ -104,7 +104,7 @@ export function SectionHeading({
       </View>
       {actionLabel ? (
         <Pressable accessibilityRole="button" onPress={onAction} hitSlop={8}>
-          <ThemedText type="smallBold" style={{ color: theme.brand }}>
+          <ThemedText type="smallBold" style={{ color: theme.brandStrong }}>
             {actionLabel}
           </ThemedText>
         </Pressable>
@@ -136,7 +136,7 @@ export function Sheet({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.modalRoot}>
         <Pressable
-          style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(9,24,15,0.45)' }]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(20,20,20,0.45)' }]}
           accessibilityLabel="Close"
           onPress={onClose}
         />
@@ -189,12 +189,12 @@ export function SpecTile({
 }) {
   const theme = useTheme();
   return (
-    <View style={[styles.specTile, { backgroundColor: theme.brandSoft }]}>
-      <Ionicons name={icon} size={18} color={theme.brand} />
-      <ThemedText type="smallBold" numberOfLines={1}>
+    <View style={[styles.specTile, { backgroundColor: theme.backgroundSelected }]}>
+      <Ionicons name={icon} size={19} color={theme.accentGold} />
+      <ThemedText style={styles.specValue} numberOfLines={1}>
         {value}
       </ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
+      <ThemedText style={[styles.specLabel, { color: theme.textSecondary }]} numberOfLines={1}>
         {label}
       </ThemedText>
     </View>
@@ -248,11 +248,11 @@ export function Segmented<T extends string>({
             onPress={() => onChange(option.value)}
             style={[
               styles.segment,
-              active && { backgroundColor: theme.backgroundElement },
+              active && { backgroundColor: theme.brandSoft },
             ]}>
             <ThemedText
               type="smallBold"
-              style={{ color: active ? theme.brandStrong : theme.textSecondary }}>
+              style={{ color: active ? theme.text : theme.textSecondary }}>
               {option.label}
             </ThemedText>
           </Pressable>
@@ -285,9 +285,7 @@ export function MenuRow({
         { opacity: pressed ? 0.75 : 1, borderBottomColor: theme.line },
         last && styles.menuRowLast,
       ]}>
-      <View style={[styles.menuIcon, { backgroundColor: theme.brandSoft }]}>
-        <Ionicons name={icon} size={18} color={theme.brandStrong} />
-      </View>
+      <Ionicons name={icon} size={21} color={theme.accentGold} />
       <ThemedText type="body" style={styles.menuLabel}>
         {label}
       </ThemedText>
@@ -298,7 +296,7 @@ export function MenuRow({
           </ThemedText>
         </View>
       ) : null}
-      <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+      <Ionicons name="arrow-forward" size={17} color={theme.accentGold} />
     </Pressable>
   );
 }
@@ -358,12 +356,14 @@ const styles = StyleSheet.create({
   specTile: {
     flex: 1,
     borderRadius: Radius.tile,
-    paddingVertical: Spacing.three,
+    paddingVertical: 12,
     paddingHorizontal: Spacing.two,
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     minWidth: 74,
   },
+  specValue: { fontSize: 14, lineHeight: 18, fontWeight: '800' },
+  specLabel: { fontSize: 11, lineHeight: 14, fontWeight: '500' },
   notice: {
     flexDirection: 'row',
     gap: Spacing.two,
@@ -382,19 +382,12 @@ const styles = StyleSheet.create({
   menuRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
-    paddingVertical: 12,
+    gap: 14,
+    paddingVertical: 15,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   menuRowLast: { borderBottomWidth: 0 },
-  menuIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  menuLabel: { flex: 1, fontWeight: '600' },
+  menuLabel: { flex: 1, fontWeight: '700' },
   menuMeta: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: Radius.pill },
   chipRow: { gap: Spacing.two, paddingVertical: 2 },
 });

@@ -458,6 +458,29 @@ export default async function AdminVehiclesPage({
                         <Field label="Mileage">
                           <input name="mileage" defaultValue={vehicle.mileage} className={adminInput} />
                         </Field>
+                        <Field label="Luggage (bags)" hint="Required for vans.">
+                          <input
+                            name="luggageCapacity"
+                            type="number"
+                            min={0}
+                            max={30}
+                            defaultValue={vehicle.luggageCapacity ?? undefined}
+                            className={adminInput}
+                          />
+                        </Field>
+                        <Field label="AC" hint="Required for vans.">
+                          <select
+                            name="ac"
+                            defaultValue={
+                              vehicle.ac === null ? "" : vehicle.ac ? "true" : "false"
+                            }
+                            className={adminInput}
+                          >
+                            <option value="">Not set</option>
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                          </select>
+                        </Field>
                         <Field label="Deposit (₹)">
                           <input
                             name="depositAmount"

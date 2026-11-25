@@ -139,7 +139,7 @@ export default function VerifyScreen() {
               </ThemedText>
             </ThemedText>
             <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={8}>
-              <ThemedText type="link" style={{ color: theme.brand }}>
+              <ThemedText type="link" style={{ color: theme.brandStrong }}>
                 Edit
               </ThemedText>
             </Pressable>
@@ -209,7 +209,7 @@ export default function VerifyScreen() {
               </ThemedText>
             ) : (
               <Pressable accessibilityRole="button" onPress={() => void resend()} hitSlop={8} disabled={resending}>
-                <ThemedText type="smallBold" style={{ color: theme.brand }}>
+                <ThemedText type="smallBold" style={{ color: theme.brandStrong }}>
                   {resending ? 'Sending a fresh code…' : 'Resend code'}
                 </ThemedText>
               </Pressable>
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   codeBoxActive: {
-    shadowColor: '#1f7a3a',
+    shadowColor: '#242424',
     shadowOpacity: 0.18,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 0 },

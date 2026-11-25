@@ -341,8 +341,31 @@ export class VehiclesService {
     }
   }
 
+  private async assertVanSpecs(
+    categoryId: string,
+    luggageCapacity: number | null | undefined,
+    ac: boolean | null | undefined,
+  ) {
+    const category = await this.prisma.vehicleCategory.findUnique({
+      where: { id: categoryId },
+    });
+    if (category?.slug !== "van") return;
+    if (
+      luggageCapacity === undefined ||
+      luggageCapacity === null ||
+      ac === undefined ||
+      ac === null
+    ) {
+      throw new BadRequestException({
+        message: "Van listings require luggageCapacity and ac",
+        code: "VAN_SPECS_REQUIRED",
+      });
+    }
+  }
+
   async create(actor: AuthUser, dto: CreateVehicleDto) {
     await this.ensureCatalogueRefs(dto.categoryId, dto.locationId);
+    await this.assertVanSpecs(dto.categoryId, dto.luggageCapacity, dto.ac);
     const ownerId =
       this.isAdmin(actor.roles) && dto.ownerId ? dto.ownerId : actor.id;
     await this.ensureUser(ownerId);
@@ -381,6 +404,8 @@ export class VehiclesService {
           status: dto.status ?? VehicleStatus.DRAFT,
           popular: dto.popular ?? false,
           mileageLimitKm: dto.mileageLimitKm ?? null,
+          luggageCapacity: dto.luggageCapacity ?? null,
+          ac: dto.ac ?? null,
           depositAmount: new Prisma.Decimal(dto.depositAmount),
           fromPrice: dto.pricing
             ? new Prisma.Decimal(dto.pricing.baseDayRate)
@@ -444,6 +469,11 @@ export class VehiclesService {
         dto.locationId ?? existing.locationId,
       );
     }
+    await this.assertVanSpecs(
+      dto.categoryId ?? existing.categoryId,
+      dto.luggageCapacity === undefined ? existing.luggageCapacity : dto.luggageCapacity,
+      dto.ac === undefined ? existing.ac : dto.ac,
+    );
     let ownerId: string | undefined;
     if (dto.ownerId && dto.ownerId !== existing.ownerId) {
       if (!this.isAdmin(actor.roles)) {
@@ -475,6 +505,10 @@ export class VehiclesService {
       ...(dto.mileageLimitKm !== undefined
         ? { mileageLimitKm: dto.mileageLimitKm }
         : {}),
+      ...(dto.luggageCapacity !== undefined
+        ? { luggageCapacity: dto.luggageCapacity }
+        : {}),
+      ...(dto.ac !== undefined ? { ac: dto.ac } : {}),
       ...(dto.depositAmount !== undefined
         ? { depositAmount: new Prisma.Decimal(dto.depositAmount) }
         : {}),

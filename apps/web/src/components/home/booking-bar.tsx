@@ -54,16 +54,16 @@ export function BookingBar() {
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-y-6 left-0 hidden w-16 bg-[radial-gradient(#b9d6aa_1.3px,transparent_1.4px)] [background-size:11px_11px] opacity-70 [mask-image:linear-gradient(to_right,black,transparent)] lg:block"
+        className="pointer-events-none absolute inset-y-6 left-0 hidden w-16 bg-[radial-gradient(#e6d9b8_1.3px,transparent_1.4px)] [background-size:11px_11px] opacity-70 [mask-image:linear-gradient(to_right,black,transparent)] lg:block"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-y-6 right-0 hidden w-16 bg-[radial-gradient(#b9d6aa_1.3px,transparent_1.4px)] [background-size:11px_11px] opacity-70 [mask-image:linear-gradient(to_left,black,transparent)] lg:block"
+        className="pointer-events-none absolute inset-y-6 right-0 hidden w-16 bg-[radial-gradient(#e6d9b8_1.3px,transparent_1.4px)] [background-size:11px_11px] opacity-70 [mask-image:linear-gradient(to_left,black,transparent)] lg:block"
       />
 
       <form
         onSubmit={submit}
-        className="relative mx-auto flex w-[calc(100%-1rem)] max-w-[1240px] flex-col gap-3 rounded-[26px] bg-[#164536] p-3 shadow-lift lg:flex-row lg:items-center lg:gap-4 lg:p-4"
+        className="relative mx-auto flex w-[calc(100%-1rem)] max-w-[1240px] flex-col gap-3 rounded-[26px] bg-[#242424] p-3 shadow-lift lg:flex-row lg:items-center lg:gap-4 lg:p-4"
       >
         <div className="flex items-center gap-3 px-2 lg:w-[228px] lg:shrink-0 lg:px-0">
           <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white/10">
@@ -115,7 +115,7 @@ export function BookingBar() {
 
         <button
           type="submit"
-          className="inline-flex h-[54px] shrink-0 items-center justify-center gap-2 rounded-[16px] bg-brand-500 px-7 text-[15px] font-bold text-white transition hover:bg-brand-600"
+          className="inline-flex h-[54px] shrink-0 items-center justify-center gap-2 rounded-[16px] bg-brand-500 px-7 text-[15px] font-bold text-ink transition hover:bg-brand-600"
         >
           Find Service
           <ArrowRight className="size-4" />

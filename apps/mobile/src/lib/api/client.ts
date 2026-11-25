@@ -32,7 +32,8 @@ export type ApiClient = {
   baseUrl(): string;
 };
 
-const DEFAULT_TIMEOUT_MS = 15_000;
+/** Generous enough for the hosted API to wake from its idle sleep before the request is abandoned. */
+const DEFAULT_TIMEOUT_MS = 30_000;
 
 function buildUrl(baseUrl: string, path: string, query?: Record<string, QueryValue>): string {
   const url = `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;

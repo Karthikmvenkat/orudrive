@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 
+import { PageHeader } from '@/components/kit';
 import { ThemedText } from '@/components/themed-text';
 import { Button, Field, Screen } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
@@ -60,10 +61,11 @@ export default function ForgotPasswordScreen() {
 
   return (
     <Screen tabBarSpace={false} style={styles.screen}>
-      <ThemedText type="title">Reset password</ThemedText>
-      <ThemedText type="body" themeColor="textSecondary">
-        We send a six-digit code to the e-mail on your account.
-      </ThemedText>
+      <PageHeader
+        title="Reset password"
+        subtitle="We send a six-digit code to the e-mail on your account."
+        onBack={() => (router.canGoBack() ? router.back() : router.replace('/(auth)/login'))}
+      />
 
       <Field
         label="E-mail"

@@ -70,7 +70,7 @@ export default async function CheckoutPage({
                   <span
                     className={
                       i <= 1
-                        ? "grid size-5 place-items-center rounded-full bg-brand-500 text-[10px] font-bold text-white"
+                        ? "grid size-5 place-items-center rounded-full bg-brand-500 text-[10px] font-bold text-ink"
                         : "grid size-5 place-items-center rounded-full bg-line text-[10px] font-bold text-muted"
                     }
                   >

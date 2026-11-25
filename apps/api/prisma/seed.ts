@@ -59,6 +59,14 @@ const categories = [
     imageUrl: "/images/categories/car.jpg",
     sortOrder: 3,
   },
+  {
+    slug: "van",
+    name: "Vans",
+    tagline: "Space for the whole crew and everything they carry.",
+    description: "People movers, cargo vans and minibuses for groups, shoots and outstation trips.",
+    imageUrl: "/images/categories/van.jpg",
+    sortOrder: 4,
+  },
 ];
 
 const locations = [
@@ -98,7 +106,7 @@ type SeedVehicle = {
   slug: string;
   name: string;
   brand: string;
-  category: "scooter" | "motorcycle" | "car";
+  category: "scooter" | "motorcycle" | "car" | "van";
   registrationNumber: string;
   year: number;
   transmission: "MANUAL" | "AUTOMATIC";
@@ -110,6 +118,8 @@ type SeedVehicle = {
   deposit: number;
   mileageLimitKm: number | null;
   extraKmRate: number;
+  luggageCapacity?: number;
+  ac?: boolean;
   popular?: boolean;
   description: string;
 };
@@ -371,6 +381,68 @@ const vehicles: SeedVehicle[] = [
     mileageLimitKm: 150,
     extraKmRate: 8,
     description: "Sharp, light and quick — a weekend toy for riders who like their roads twisty.",
+  },
+  {
+    slug: "maruti-suzuki-eeco",
+    name: "Maruti Suzuki Eeco",
+    brand: "Maruti Suzuki",
+    category: "van",
+    registrationNumber: "PY01AA1015",
+    year: 2024,
+    transmission: "MANUAL",
+    fuelType: "PETROL",
+    seats: 5,
+    engine: "1196 cc",
+    mileage: "20 km/l",
+    pricePerDay: 1899,
+    deposit: 3000,
+    mileageLimitKm: 200,
+    extraKmRate: 12,
+    luggageCapacity: 3,
+    ac: true,
+    popular: true,
+    description: "The honest little van — five seats, a sliding door and a flat load floor for market runs, kit and crew.",
+  },
+  {
+    slug: "toyota-innova-crysta",
+    name: "Toyota Innova Crysta",
+    brand: "Toyota",
+    category: "van",
+    registrationNumber: "PY01AA1016",
+    year: 2023,
+    transmission: "MANUAL",
+    fuelType: "DIESEL",
+    seats: 7,
+    engine: "2393 cc",
+    mileage: "15 km/l",
+    pricePerDay: 3499,
+    deposit: 5000,
+    mileageLimitKm: 250,
+    extraKmRate: 14,
+    luggageCapacity: 4,
+    ac: true,
+    popular: true,
+    description: "Seven proper seats with captain chairs and a cold AC — the default choice for family and airport runs.",
+  },
+  {
+    slug: "force-traveller",
+    name: "Force Traveller 3350",
+    brand: "Force",
+    category: "van",
+    registrationNumber: "PY01AA1017",
+    year: 2022,
+    transmission: "MANUAL",
+    fuelType: "DIESEL",
+    seats: 12,
+    engine: "2596 cc",
+    mileage: "12 km/l",
+    pricePerDay: 4999,
+    deposit: 8000,
+    mileageLimitKm: 300,
+    extraKmRate: 16,
+    luggageCapacity: 6,
+    ac: true,
+    description: "Twelve seats, high roof and a long luggage bay — built for crew moves, weddings and outstation groups.",
   },
 ];
 
@@ -645,7 +717,9 @@ async function seedFleet(vendorId: string) {
 
   const vehicleIds: Record<string, string> = {};
   const hubFor = (category: string) =>
-    category === "car" ? locationIds["airport-road"] : locationIds["white-town"];
+    category === "car" || category === "van"
+      ? locationIds["airport-road"]
+      : locationIds["white-town"];
 
   for (const vehicle of vehicles) {
     const row = await prisma.vehicle.upsert({
@@ -661,6 +735,8 @@ async function seedFleet(vendorId: string) {
         fromPrice: vehicle.pricePerDay,
         rating: vehicle.popular ? 4.8 : 4.6,
         reviewCount: vehicle.popular ? 120 : 48,
+        luggageCapacity: vehicle.luggageCapacity ?? null,
+        ac: vehicle.ac ?? null,
       },
       create: {
         slug: vehicle.slug,
@@ -682,6 +758,8 @@ async function seedFleet(vendorId: string) {
         reviewCount: vehicle.popular ? 120 : 48,
         popular: vehicle.popular ?? false,
         mileageLimitKm: vehicle.mileageLimitKm,
+        luggageCapacity: vehicle.luggageCapacity ?? null,
+        ac: vehicle.ac ?? null,
         depositAmount: vehicle.deposit,
         fromPrice: vehicle.pricePerDay,
       },

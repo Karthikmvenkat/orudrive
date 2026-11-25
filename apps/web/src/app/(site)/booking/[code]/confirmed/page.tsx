@@ -109,7 +109,7 @@ export default async function BookingConfirmedPage({
             <div className="pointer-events-none absolute -left-10 -top-10 size-32 rounded-full bg-brand-100/60 blur-2xl" />
             <div className="pointer-events-none absolute -bottom-12 -right-8 size-36 rounded-full bg-tint-mint blur-2xl" />
 
-            <div className="relative mx-auto grid size-16 place-items-center rounded-full bg-brand-500 text-white shadow-[0_16px_32px_-16px_rgba(76,175,43,0.9)]">
+            <div className="relative mx-auto grid size-16 place-items-center rounded-full bg-brand-500 text-ink shadow-[0_16px_32px_-16px_rgba(255,196,0,0.9)]">
               <Check className="size-8" strokeWidth={3} />
             </div>
             <p className="relative mt-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-600">

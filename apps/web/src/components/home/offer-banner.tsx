@@ -18,13 +18,13 @@ export function OfferBanner() {
 
   return (
     <section className="container-page py-6 lg:py-10">
-      <div className="relative overflow-hidden rounded-[26px] bg-linear-to-br from-brand-600 via-brand-500 to-brand-400 px-5 py-8 text-white shadow-[0_24px_60px_-30px_rgba(76,175,43,0.65)] sm:px-8 lg:px-10 lg:py-10">
-        <div className="pointer-events-none absolute -right-10 -top-24 size-64 rounded-full border-[36px] border-white/10" />
-        <div className="pointer-events-none absolute -bottom-28 left-1/3 size-72 rounded-full bg-white/10 blur-2xl" />
+      <div className="relative overflow-hidden rounded-[26px] bg-linear-to-br from-brand-600 via-brand-500 to-brand-400 px-5 py-8 text-ink shadow-[0_24px_60px_-30px_rgba(255,196,0,0.65)] sm:px-8 lg:px-10 lg:py-10">
+        <div className="pointer-events-none absolute -right-10 -top-24 size-64 rounded-full border-[36px] border-ink/10" />
+        <div className="pointer-events-none absolute -bottom-28 left-1/3 size-72 rounded-full bg-ink/10 blur-2xl" />
 
         <div className="relative grid items-center gap-6 lg:grid-cols-[1.05fr_0.75fr_0.85fr]">
           <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold backdrop-blur">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-ink/10 px-3 py-1 text-[11px] font-semibold backdrop-blur">
               <Tag className="size-3" /> Limited Time Offer
             </span>
             <h2 className="mt-3 text-[30px] font-extrabold leading-[1.05] tracking-[-0.03em] sm:text-[38px]">
@@ -36,7 +36,7 @@ export function OfferBanner() {
               {["No Security Hassle", "Flexible Duration", "Instant Booking"].map((item) => (
                 <span
                   key={item}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-forest/25 px-2.5 py-1 text-[10.5px] font-medium"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-ink/10 px-2.5 py-1 text-[10.5px] font-medium"
                 >
                   <Check className="size-3" /> {item}
                 </span>
@@ -62,8 +62,8 @@ export function OfferBanner() {
             </span>
           </div>
 
-          <div className="rounded-2xl border-2 border-dashed border-white/45 bg-white/12 p-4 backdrop-blur-sm">
-            <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-white/70">
+          <div className="rounded-2xl border-2 border-dashed border-white/70 bg-white/35 p-4 backdrop-blur-sm">
+            <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink/70">
               Use Coupon Code
             </p>
             <div className="mt-2 flex items-center justify-between gap-3">
@@ -79,12 +79,12 @@ export function OfferBanner() {
                 <Copy className="size-4" />
               </button>
             </div>
-            <p className="mt-1 text-[11.5px] text-white/80">
+            <p className="mt-1 text-[11.5px] text-ink/75">
               &amp; get 20% OFF up to ₹300 on your booking
             </p>
-            <div className="mt-3 flex items-center justify-between border-t border-white/20 pt-2.5 text-[10.5px] text-white/70">
+            <div className="mt-3 flex items-center justify-between border-t border-ink/15 pt-2.5 text-[10.5px] text-ink/70">
               <span>Valid till 30 Nov 2026</span>
-              <Link href="/offers" className="font-semibold text-white hover:underline">
+              <Link href="/offers" className="font-semibold text-ink hover:underline">
                 All offers →
               </Link>
             </div>

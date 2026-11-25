@@ -359,7 +359,7 @@ export function CheckoutForm({
           email: values.email,
           contact: values.phone,
         },
-        theme: { color: "#4caf2b" },
+        theme: { color: "#ffc400" },
         handler: async (result: {
           razorpay_order_id: string;
           razorpay_payment_id: string;

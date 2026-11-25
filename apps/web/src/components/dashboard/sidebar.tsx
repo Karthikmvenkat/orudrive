@@ -50,7 +50,7 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
                     />
                     {link.label}
                     {link.badge && (
-                      <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-brand-500 px-1.5 text-[10.5px] font-bold text-white">
+                      <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-brand-500 px-1.5 text-[10.5px] font-bold text-ink">
                         {link.badge}
                       </span>
                     )}

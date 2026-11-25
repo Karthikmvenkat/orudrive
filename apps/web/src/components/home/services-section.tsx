@@ -18,6 +18,13 @@ const services = [
     alt: "White sedan available for self-drive rent on SavariGo",
   },
   {
+    title: "Rental Vans",
+    subtitle: "Crew & cargo moves",
+    href: "/vans",
+    image: "/images/services/rental-vans.png",
+    alt: "White passenger van available for rent on SavariGo",
+  },
+  {
     title: "Tow Vehicle",
     subtitle: "On-road assistance",
     href: "/tow-vehicle",
@@ -59,12 +66,12 @@ export function ServicesSection() {
             </Link>
           </div>
 
-          <div className="mt-3.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5 lg:gap-3">
+          <div className="mt-3.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6 lg:gap-3">
             {services.map((service) => (
               <Link
                 key={service.title}
                 href={service.href}
-                className="group flex flex-col rounded-xl border border-line bg-[#f1faf2] p-2.5 transition duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft"
+                className="group flex flex-col rounded-xl border border-line bg-[#fbf5e9] p-2.5 transition duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft"
               >
                 <span className="relative block h-[64px] overflow-hidden sm:h-[72px]">
                   <Image
@@ -84,7 +91,7 @@ export function ServicesSection() {
                       {service.subtitle}
                     </span>
                   </span>
-                  <span className="grid size-6 shrink-0 place-items-center rounded-full bg-brand-100 text-brand-800 transition group-hover:bg-brand-500 group-hover:text-white">
+                  <span className="grid size-6 shrink-0 place-items-center rounded-full bg-brand-100 text-brand-800 transition group-hover:bg-brand-500 group-hover:text-ink">
                     <ArrowRight className="size-3.5" />
                   </span>
                 </span>

@@ -6,7 +6,7 @@ import {
   Logger,
   type RawBodyRequest,
 } from "@nestjs/common";
-import express, { type Request } from "express";
+import express, { type NextFunction, type Request, type Response } from "express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
@@ -27,17 +27,18 @@ async function bootstrap() {
   app.setGlobalPrefix("api/v1");
 
   // A partner application carries two base64 documents, far past the 100 KB
-  // default. Registering the parser for this one path before listen() means it
-  // reads the body first; the global parser Nest adds afterwards finds the body
-  // already parsed and steps aside, so the webhook's rawBody is untouched.
-  app.use(
-    "/api/v1/partners/apply",
-    express.json({
-      limit: "8mb",
-      verify: (request: Request, _response, buffer) => {
-        (request as RawBodyRequest<Request>).rawBody = buffer;
-      },
-    }),
+  // default. Express 5 path-mounted parsers silently disable Nest's global
+  // body parsing, so one dispatcher picks the limit per path instead; the
+  // verify hook keeps rawBody intact for the Razorpay webhook signature.
+  const captureRawBody = (request: Request, _response: unknown, buffer: Buffer) => {
+    (request as RawBodyRequest<Request>).rawBody = buffer;
+  };
+  const applyParser = express.json({ limit: "8mb", verify: captureRawBody });
+  const defaultParser = express.json({ limit: "100kb", verify: captureRawBody });
+  app.use((request: Request, response: Response, next: NextFunction) =>
+    request.path === "/api/v1/partners/apply"
+      ? applyParser(request, response, next)
+      : defaultParser(request, response, next),
   );
 
   applyHttpSecurity(app, resolveHttpSecurityOptions(config));

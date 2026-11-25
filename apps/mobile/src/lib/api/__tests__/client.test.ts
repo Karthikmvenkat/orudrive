@@ -161,7 +161,7 @@ describe('errors', () => {
         new ApiError({ statusCode: 400, code: 'SOMETHING_NEW', message: 'Rejected', details: ['licence number is required'] }),
       ),
     ).toBe('licence number is required');
-    expect(describeApiError(new TypeError('fetch failed'))).toMatch(/Cannot reach the SavariGo API/);
+    expect(describeApiError(new TypeError('fetch failed'))).toMatch(/Cannot reach SavariGo/);
     expect(describeApiError('nope')).toBe('Something went wrong.');
   });
 });

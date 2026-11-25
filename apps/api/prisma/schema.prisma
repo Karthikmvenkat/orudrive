@@ -465,6 +465,8 @@ model Vehicle {
   reviewCount        Int           @default(0)
   popular            Boolean       @default(false)
   mileageLimitKm     Int?
+  luggageCapacity    Int?
+  ac                 Boolean?
   depositAmount      Decimal       @db.Decimal(12, 2)
   // Denormalised lowest active day rate, maintained by the pricing service.
   fromPrice          Decimal       @default(0) @db.Decimal(12, 2)

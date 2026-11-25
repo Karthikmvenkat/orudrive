@@ -180,7 +180,7 @@ export function PortalShell({
                       <span
                         className={cn(
                           "rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
-                          active ? "bg-brand-400 text-forest" : "bg-white/12 text-white/70",
+                          active ? "bg-brand-400 text-forest" : "bg-white/12 text-ink/70",
                         )}
                       >
                         {link.badge}

@@ -69,7 +69,7 @@ export function VehicleCard({ vehicle, onPress }: { vehicle: ApiVehicle; onPress
 
 const styles = StyleSheet.create({
   media: { margin: -Spacing.three, marginBottom: Spacing.two },
-  image: { width: '100%', height: 168, backgroundColor: '#e5eae1' },
+  image: { width: '100%', height: 168, backgroundColor: '#f1e7d2' },
   placeholder: { alignItems: 'center', justifyContent: 'center' },
   mediaOverlay: { position: 'absolute', right: Spacing.three, bottom: -Spacing.two },
   head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.two },

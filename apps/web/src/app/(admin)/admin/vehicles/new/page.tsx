@@ -13,6 +13,7 @@ import {
   firstParam,
 } from "@/components/admin/ui";
 import { createVehicle } from "../../actions";
+import { VanSpecsFields } from "@/components/admin/van-specs-fields";
 
 export const metadata: Metadata = { title: "Add a vehicle · Admin" };
 
@@ -54,7 +55,7 @@ export default async function NewVehiclePage({
 
         <AdminPanel
           title="Identity"
-          description="What the bike or car is. The slug is generated from the name when left blank."
+          description="What the bike, car or van is. The slug is generated from the name when left blank."
           bodyClassName="grid gap-4 px-5 py-5 sm:grid-cols-2 lg:grid-cols-4"
         >
           <Field label="Name" className="lg:col-span-2">
@@ -170,6 +171,8 @@ export default async function NewVehiclePage({
             Feature in &quot;Popular rides&quot; on the home screen
           </label>
         </AdminPanel>
+
+        <VanSpecsFields categories={categories} />
 
         <AdminPanel
           title="Day-rate pricing"

@@ -197,7 +197,9 @@ export function BookingWidget({
         <ul className="space-y-2 border-t border-line pt-3.5">
           {[
             "Verified vehicle & insured ride",
-            "Helmet included with every rental",
+            ...(vehicle.category === "scooter" || vehicle.category === "motorcycle"
+              ? ["Helmet included with every rental"]
+              : []),
             "24/7 roadside assistance",
           ].map((item) => (
             <li key={item} className="flex items-center gap-2 text-[11.5px] text-ink-soft">

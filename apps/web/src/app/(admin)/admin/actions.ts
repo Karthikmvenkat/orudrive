@@ -129,6 +129,8 @@ export async function createVehicle(formData: FormData) {
   const slug = text(formData, "slug");
   const imageUrl = text(formData, "imageUrl");
   const imageAlt = text(formData, "imageAlt");
+  const luggageCapacity = number(formData, "luggageCapacity");
+  const acRaw = formData.get("ac");
 
   await run(
     formData,
@@ -152,6 +154,8 @@ export async function createVehicle(formData: FormData) {
           status: text(formData, "status") ?? "DRAFT",
           popular: bool(formData, "popular"),
           ...(mileageLimitKm === undefined ? {} : { mileageLimitKm }),
+          ...(luggageCapacity === undefined ? {} : { luggageCapacity }),
+          ...(acRaw === null ? {} : { ac: acRaw === "true" }),
           depositAmount,
           ...(imageUrl
             ? { images: [{ url: imageUrl, alt: imageAlt ?? `${name} photo`, isPrimary: true }] }
@@ -179,6 +183,8 @@ export async function createVehicle(formData: FormData) {
 
 export async function updateVehicle(formData: FormData) {
   const id = text(formData, "id");
+  const luggageCapacity = number(formData, "luggageCapacity");
+  const acRaw = formData.get("ac");
   await run(
     formData,
     () =>
@@ -194,6 +200,8 @@ export async function updateVehicle(formData: FormData) {
           description: text(formData, "description"),
           depositAmount: number(formData, "depositAmount"),
           status: text(formData, "status"),
+          ...(luggageCapacity === undefined ? {} : { luggageCapacity }),
+          ...(acRaw === null || acRaw === "" ? {} : { ac: acRaw === "true" }),
         },
       }),
     "Vehicle updated",

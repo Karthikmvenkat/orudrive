@@ -6,7 +6,7 @@ import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { MenuRow, Sheet } from '@/components/kit';
 import { ThemedText } from '@/components/themed-text';
 import { Button, Card, Screen } from '@/components/ui';
-import { CardShadow, Radius, Spacing } from '@/constants/theme';
+import { BottomTabInset, CardShadow, Radius, Spacing } from '@/constants/theme';
 import { useMyBookings } from '@/features/bookings/use-my-bookings';
 import { useTheme } from '@/hooks/use-theme';
 import { bookingApi, catalogueApi, paymentApi } from '@/lib/api/endpoints';
@@ -72,7 +72,7 @@ export default function AccountScreen() {
 
   if (status !== 'signed-in') {
     return (
-      <Screen>
+      <Screen tabBarSpace={false}>
         <ThemedText type="title">Account</ThemedText>
         <Card>
           <ThemedText type="body">
@@ -93,7 +93,7 @@ export default function AccountScreen() {
   const hasLicence = Boolean(me?.customerProfile?.licenceNumber);
 
   return (
-    <Screen>
+    <Screen tabBarSpace={false}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body}>
         <ThemedText type="title">Account</ThemedText>
 
@@ -107,19 +107,21 @@ export default function AccountScreen() {
             { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.94 : 1 },
           ]}>
           <View style={[styles.avatar, { backgroundColor: theme.brandSoft }]}>
-            <ThemedText type="heading" style={{ color: theme.brand }}>
+            <ThemedText style={[styles.avatarText, { color: theme.brandStrong }]}>
               {initials(name)}
             </ThemedText>
           </View>
           <View style={styles.profileText}>
-            <ThemedText type="subtitle" numberOfLines={1}>
+            <ThemedText style={[styles.profileName, { color: theme.text }]} numberOfLines={1}>
               {name}
             </ThemedText>
-            <ThemedText type="smallBold" style={{ color: theme.brand }}>
-              View and edit profile
-            </ThemedText>
+            <View style={styles.profileLink}>
+              <ThemedText style={[styles.profileLinkText, { color: theme.accentGold }]}>
+                View and edit profile
+              </ThemedText>
+              <Ionicons name="arrow-forward" size={14} color={theme.accentGold} />
+            </View>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
         </Pressable>
 
         <View style={styles.statGrid}>
@@ -147,31 +149,19 @@ export default function AccountScreen() {
             label="Total spent"
             note={
               stats.paidBookings > 0
-                ? `Across ${stats.paidBookings} paid booking${stats.paidBookings === 1 ? '' : 's'}`
+                ? `Across ${stats.paidBookings} booking${stats.paidBookings === 1 ? '' : 's'}`
                 : 'Nothing paid yet'
             }
           />
         </View>
 
-        <ThemedText type="label" themeColor="textSecondary">
-          Rides
-        </ThemedText>
+        <ThemedText style={[styles.groupTitle, { color: theme.text }]}>Rides</ThemedText>
         <View style={[styles.menuCard, CardShadow, { backgroundColor: theme.backgroundElement }]}>
-          <MenuRow icon="ticket-outline" label="My bookings" onPress={() => router.push('/(tabs)/bookings')} />
-          <MenuRow icon="heart-outline" label="Saved vehicles" onPress={() => router.push('/saved')} />
-          <MenuRow icon="card-outline" label="Payments & refunds" onPress={() => router.push('/payments')} />
-          <MenuRow
-            icon="pricetag-outline"
-            label="Offers & coupons"
-            meta={maxPercent > 0 ? `Up to ${maxPercent}% off` : undefined}
-            onPress={() => router.push('/offers')}
-            last
-          />
+          <MenuRow icon="calendar-outline" label="My Bookings" onPress={() => router.push('/(tabs)/bookings')} />
+          <MenuRow icon="heart-outline" label="Saved vehicles" onPress={() => router.push('/saved')} last />
         </View>
 
-        <ThemedText type="label" themeColor="textSecondary">
-          Account
-        </ThemedText>
+        <ThemedText style={[styles.groupTitle, { color: theme.text }]}>Account</ThemedText>
         <View style={[styles.menuCard, CardShadow, { backgroundColor: theme.backgroundElement }]}>
           <MenuRow icon="person-outline" label="Personal details" onPress={() => router.push('/details')} />
           <MenuRow
@@ -179,6 +169,13 @@ export default function AccountScreen() {
             label="Driving licence & ID"
             meta={hasLicence ? 'On file' : undefined}
             onPress={() => router.push('/licence')}
+          />
+          <MenuRow icon="card-outline" label="Payments & refunds" onPress={() => router.push('/payments')} />
+          <MenuRow
+            icon="pricetag-outline"
+            label="Offers & coupons"
+            meta={maxPercent > 0 ? `Up to ${maxPercent}% off` : undefined}
+            onPress={() => router.push('/offers')}
           />
           <MenuRow icon="car-outline" label="List your vehicle" onPress={() => setVehicleOpen(true)} />
           <MenuRow icon="globe-outline" label="Language" meta="English" onPress={() => setLanguageOpen(true)} />
@@ -245,7 +242,7 @@ export default function AccountScreen() {
         subtitle="The app is in English today">
         <View style={[styles.languageRow, { borderColor: theme.brand, backgroundColor: theme.brandSoft }]}>
           <ThemedText type="smallBold">English</ThemedText>
-          <Ionicons name="checkmark-circle" size={20} color={theme.brand} />
+          <Ionicons name="checkmark-circle" size={20} color={theme.brandStrong} />
         </View>
         <ThemedText type="small" themeColor="textSecondary">
           Hindi and Tamil are not available in the app yet. Hub staff can help in person.
@@ -311,10 +308,10 @@ function StatTile({
   const theme = useTheme();
   return (
     <View style={[styles.statTile, CardShadow, { backgroundColor: theme.backgroundElement }]}>
-      <Ionicons name={icon} size={20} color={theme.brand} />
-      <ThemedText type="heading">{value}</ThemedText>
-      <ThemedText type="smallBold">{label}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+      <Ionicons name={icon} size={22} color={theme.accentGold} />
+      <ThemedText style={[styles.statValue, { color: theme.text }]}>{value}</ThemedText>
+      <ThemedText style={[styles.statLabel, { color: theme.text }]}>{label}</ThemedText>
+      <ThemedText style={[styles.statNote, { color: theme.textSecondary }]} numberOfLines={1}>
         {note}
       </ThemedText>
     </View>
@@ -322,16 +319,27 @@ function StatTile({
 }
 
 const styles = StyleSheet.create({
-  body: { gap: Spacing.three, paddingBottom: Spacing.four },
+  body: { gap: Spacing.three, paddingBottom: BottomTabInset + Spacing.four },
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
+    gap: 14,
     borderRadius: Radius.card,
     padding: Spacing.three,
   },
-  avatar: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center' },
-  profileText: { flex: 1, gap: 2 },
+  avatar: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: { fontSize: 20, fontWeight: '800' },
+  profileText: { flex: 1, gap: 4 },
+  profileName: { fontSize: 18, lineHeight: 23, fontWeight: '800' },
+  profileLink: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  profileLinkText: { fontSize: 13, lineHeight: 17, fontWeight: '700' },
+  groupTitle: { fontSize: 18, lineHeight: 23, fontWeight: '800' },
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   statTile: {
     flexBasis: '47%',
@@ -340,6 +348,9 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     gap: 3,
   },
+  statValue: { fontSize: 26, lineHeight: 32, fontWeight: '800', letterSpacing: -0.4 },
+  statLabel: { fontSize: 15, lineHeight: 20, fontWeight: '700' },
+  statNote: { fontSize: 13, lineHeight: 17 },
   menuCard: { borderRadius: Radius.card, paddingHorizontal: Spacing.three },
   supportCard: { borderRadius: Radius.card, padding: Spacing.three, gap: Spacing.two },
   supportActions: { flexDirection: 'row', gap: Spacing.two, paddingTop: Spacing.one },
@@ -354,7 +365,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     paddingVertical: 13,
   },
-  supportPrimary: { backgroundColor: '#ffffff' },
+  supportPrimary: { backgroundColor: '#fff1c2' },
   signOut: {
     flexDirection: 'row',
     alignItems: 'center',

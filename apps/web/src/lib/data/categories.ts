@@ -35,6 +35,17 @@ export const categories: Category[] = [
     tint: "peach",
   },
   {
+    slug: "vans",
+    name: "Vans",
+    tagline: "Space for the whole crew and everything they carry.",
+    description: "People movers, cargo vans and minibuses for groups and outstation trips.",
+    count: 3,
+    from: 1899,
+    href: "/vans",
+    image: "/images/categories/van.jpg",
+    tint: "lilac",
+  },
+  {
     slug: "monthly",
     name: "Monthly Rentals",
     tagline: "Long-term rentals at budget-friendly rates.",
@@ -77,6 +88,7 @@ export const vehicleTypeOptions = [
   { value: "scooter", label: "Scooter" },
   { value: "motorcycle", label: "Motorcycle" },
   { value: "car", label: "Car" },
+  { value: "van", label: "Van" },
 ];
 
 export const pickupLocations = [

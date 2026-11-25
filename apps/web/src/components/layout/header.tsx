@@ -14,6 +14,7 @@ const menus = [
     links: [
       { label: "Bikes & Scooters", href: "/bikes-scooters" },
       { label: "Cars", href: "/cars" },
+      { label: "Vans", href: "/vans" },
       { label: "Tow Vehicle", href: "/tow-vehicle" },
       { label: "Acting Drivers", href: "/driver-on-demand" },
       { label: "Mobile Puncher", href: "/mobile-puncher" },
@@ -163,7 +164,7 @@ export function Header() {
               className={cn(
                 "grid size-10 place-items-center rounded-full border text-[12px] font-bold transition",
                 user
-                  ? "border-brand-500 bg-brand-500 text-white hover:bg-brand-600"
+                  ? "border-brand-500 bg-brand-500 text-ink hover:bg-brand-600"
                   : "border-ink/25 bg-white text-ink-soft hover:border-brand-500 hover:text-brand-700",
               )}
             >

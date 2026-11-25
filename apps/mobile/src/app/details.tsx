@@ -93,7 +93,7 @@ export default function PersonalDetailsScreen() {
         </Section>
 
         {feedback ? (
-          <ThemedText type="small" style={{ color: theme.brand }}>
+          <ThemedText type="small" style={{ color: theme.brandStrong }}>
             {feedback}
           </ThemedText>
         ) : null}

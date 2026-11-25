@@ -1,4 +1,4 @@
-export type VehicleCategory = "scooter" | "motorcycle" | "car";
+export type VehicleCategory = "scooter" | "motorcycle" | "car" | "van";
 
 export type BookingStatus =
   | "upcoming"
@@ -14,7 +14,7 @@ export interface Vehicle {
   name: string;
   brand: string;
   category: VehicleCategory;
-  body?: "hatchback" | "sedan" | "suv";
+  body?: "hatchback" | "sedan" | "suv" | "people-mover" | "cargo" | "minibus";
   transmission: "Automatic" | "Manual";
   fuel: "Petrol" | "Diesel" | "Electric";
   seats: number;

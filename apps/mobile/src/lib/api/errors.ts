@@ -98,7 +98,11 @@ export function describeApiError(error: unknown): string {
   }
   if (error instanceof TypeError) {
     // fetch() rejects with TypeError when the request never got a response.
-    return 'Cannot reach the SavariGo API. Check that the app and the API are on the same network.';
+    return 'Cannot reach SavariGo. Check the connection and try again.';
+  }
+  if (error instanceof Error && error.name === 'AbortError') {
+    // The hosted API sleeps when idle, so the first request of the day is slow.
+    return 'SavariGo is taking too long to answer. Try again in a moment.';
   }
   return error instanceof Error ? error.message : 'Something went wrong.';
 }

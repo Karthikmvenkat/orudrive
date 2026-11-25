@@ -106,7 +106,7 @@ const BOOKING_STATUS_COPY: Record<ApiBookingStatus, { label: string; tone: 'neut
   PENDING: { label: 'Awaiting confirmation', tone: 'warn' },
   CONFIRMED: { label: 'Confirmed', tone: 'good' },
   ONGOING: { label: 'On the road', tone: 'good' },
-  COMPLETED: { label: 'Completed', tone: 'neutral' },
+  COMPLETED: { label: 'Completed', tone: 'good' },
   CANCELLED: { label: 'Cancelled', tone: 'bad' },
   NO_SHOW: { label: 'Not collected', tone: 'bad' },
 };

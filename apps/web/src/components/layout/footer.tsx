@@ -114,7 +114,7 @@ export function Footer() {
                   key={social.label}
                   href={social.href}
                   aria-label={social.label}
-                  className="grid size-9 place-items-center rounded-full border border-white/12 bg-white/5 text-white/70 transition hover:border-brand-400/60 hover:bg-brand-500 hover:text-white"
+                  className="grid size-9 place-items-center rounded-full border border-white/12 bg-white/5 text-ink/70 transition hover:border-brand-400/60 hover:bg-brand-500 hover:text-ink"
                 >
                   <SocialIcon name={social.icon} />
                 </a>

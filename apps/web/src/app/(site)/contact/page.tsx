@@ -91,7 +91,7 @@ export default function ContactPage() {
                   className="absolute inset-0 opacity-70"
                   style={{
                     backgroundImage:
-                      "linear-gradient(to right, rgba(76,175,43,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(76,175,43,0.12) 1px, transparent 1px)",
+                      "linear-gradient(to right, rgba(255,196,0,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,196,0,0.12) 1px, transparent 1px)",
                     backgroundSize: "26px 26px",
                   }}
                   aria-hidden
@@ -104,7 +104,7 @@ export default function ContactPage() {
                   className="absolute -right-4 top-20 h-2.5 w-40 rotate-12 rounded-full bg-white/70"
                   aria-hidden
                 />
-                <span className="absolute left-1/2 top-1/2 grid size-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-brand-500 text-white shadow-lift ring-4 ring-white">
+                <span className="absolute left-1/2 top-1/2 grid size-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-brand-500 text-ink shadow-lift ring-4 ring-white">
                   <MapPin className="size-4" />
                 </span>
                 <span className="absolute bottom-2.5 left-3 rounded-md bg-white/90 px-2 py-1 text-[10px] font-semibold text-ink-soft">

@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { MenuRow, Sheet } from '@/components/kit';
-import { Chip, StateView } from '@/components/ui';
+import { Chip, PageGlow, StateView } from '@/components/ui';
 import { BottomTabInset, CardShadow, Radius, Spacing } from '@/constants/theme';
 import { RideCard } from '@/features/catalogue/ride-card';
 import {
@@ -15,10 +15,11 @@ import {
   type ExploreFilters,
 } from '@/features/catalogue/filters-sheet';
 import { useVehicleList } from '@/features/search/use-vehicles';
+import { useRentalWindow } from '@/features/search/window-context';
 import { useTheme } from '@/hooks/use-theme';
 import { catalogueApi, type VehicleQuery } from '@/lib/api/endpoints';
 import type { ApiCategory, ApiLocation, VehicleSort } from '@/lib/api/types';
-import { formatMoney } from '@/lib/format';
+import { formatMoney, formatWeekdayDay } from '@/lib/format';
 
 const SORTS: { value: VehicleSort; label: string }[] = [
   { value: 'popular', label: 'Recommended' },
@@ -48,6 +49,7 @@ function ActiveChip({ text, onRemove }: { text: string; onRemove: () => void }) 
 
 export default function ExploreScreen() {
   const theme = useTheme();
+  const { window, durationDays } = useRentalWindow();
   const params = useLocalSearchParams<{ category?: string; location?: string }>();
 
   const [categories, setCategories] = useState<ApiCategory[]>([]);
@@ -239,18 +241,24 @@ export default function ExploreScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: theme.background }]}>
       <SafeAreaView edges={['top']} style={styles.screen}>
+        <PageGlow />
         <View style={styles.header}>
           <ThemedText type="title" numberOfLines={2}>
             {title}
           </ThemedText>
           <View style={styles.availableRow}>
-            <View style={[styles.dot, { backgroundColor: theme.brand }]} />
+            <View style={[styles.dot, { backgroundColor: theme.success }]} />
             <ThemedText type="small" themeColor="textSecondary">
               {availableToday === null
                 ? 'Checking the fleet…'
                 : `${availableToday} vehicles available today`}
             </ThemedText>
           </View>
+
+          <Text style={[styles.windowLine, { color: theme.textSecondary }]}>
+            {formatWeekdayDay(window.pickupAt)} – {formatWeekdayDay(window.returnAt)} ·{' '}
+            {durationDays} day{durationDays === 1 ? '' : 's'} · prices shown per day
+          </Text>
 
           <View style={styles.searchRow}>
             <View
@@ -288,12 +296,12 @@ export default function ExploreScreen() {
               onPress={() => setFilterSheet(true)}
               style={({ pressed }) => [
                 styles.filterButton,
-                { backgroundColor: theme.hero, opacity: pressed ? 0.9 : 1 },
+                { backgroundColor: theme.brand, opacity: pressed ? 0.9 : 1 },
               ]}>
-              <Ionicons name="options-outline" size={20} color={theme.lime} />
+              <Ionicons name="options-outline" size={20} color={theme.onBrand} />
               {filterCount > 0 ? (
-                <View style={[styles.filterBadge, { backgroundColor: theme.lime }]}>
-                  <Text style={[styles.filterBadgeText, { color: theme.limeOn }]}>{filterCount}</Text>
+                <View style={[styles.filterBadge, { backgroundColor: theme.onBrand }]}>
+                  <Text style={[styles.filterBadgeText, { color: theme.brand }]}>{filterCount}</Text>
                 </View>
               ) : null}
             </Pressable>
@@ -346,12 +354,12 @@ export default function ExploreScreen() {
                 onPress={() => router.push({ pathname: '/vehicles/[slug]', params: { slug: item.slug } })}
               />
               {index === 1 ? (
-                <View style={[styles.delivery, CardShadow, { backgroundColor: theme.brandSoft }]}>
-                  <View style={[styles.deliveryIcon, { backgroundColor: theme.brand }]}>
+                <View style={[styles.delivery, CardShadow, { backgroundColor: theme.serviceSoft }]}>
+                  <View style={[styles.deliveryIcon, { backgroundColor: theme.service }]}>
                     <Ionicons name="cube-outline" size={18} color="#ffffff" />
                   </View>
                   <View style={styles.deliveryText}>
-                    <ThemedText type="smallBold" style={{ color: theme.brandStrong }}>
+                    <ThemedText type="smallBold" style={{ color: theme.serviceStrong }}>
                       Need it delivered?
                     </ThemedText>
                     <ThemedText type="small" themeColor="textSecondary">
@@ -426,6 +434,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   header: { paddingHorizontal: Spacing.three, paddingTop: Spacing.two, gap: Spacing.two },
   availableRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  windowLine: { fontSize: 12, fontWeight: '600', marginTop: -2 },
   dot: { width: 7, height: 7, borderRadius: 4 },
   searchRow: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one },
   searchBox: {

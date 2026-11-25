@@ -2,34 +2,36 @@
 @source "../";
 
 @theme {
-  --color-brand-50: #f3faee;
-  --color-brand-100: #e5f5da;
-  --color-brand-200: #cceab8;
-  --color-brand-300: #a6d98a;
-  --color-brand-400: #7ec95a;
-  --color-brand-500: #4caf2b;
-  --color-brand-600: #3d9622;
-  --color-brand-700: #31761d;
-  --color-brand-800: #285e1a;
-  --color-brand-900: #204a16;
-  --color-brand-950: #0b2a18;
+  --color-brand-50: #fffaeb;
+  --color-brand-100: #fff1c2;
+  --color-brand-200: #ffe280;
+  --color-brand-300: #ffd24d;
+  --color-brand-400: #ffcd33;
+  --color-brand-500: #ffc400;
+  --color-brand-600: #e09400;
+  --color-brand-700: #b87a00;
+  --color-brand-800: #8a6400;
+  --color-brand-900: #6d5008;
+  --color-brand-950: #3d2c04;
 
-  --color-forest: #0b2a18;
-  --color-ink: #0d1f14;
-  --color-ink-soft: #2b3a31;
-  --color-muted: #67786d;
-  --color-line: #e5eae1;
-  --color-line-strong: #d6ddd1;
-  --color-page: #f7f9f6;
+  --color-forest: #242424;
+  --color-ink: #242424;
+  --color-ink-soft: #3f3f3f;
+  --color-muted: #737373;
+  --color-line: #eae5da;
+  --color-line-strong: #dcd5c6;
+  --color-page: #fff9ed;
   --color-surface: #ffffff;
-  --color-warning: #f59e0b;
-  --color-danger: #dc2626;
+  --color-warning: #e09400;
+  --color-danger: #c62828;
+  --color-success: #2e7d4f;
+  --color-success-soft: #e8f3ea;
 
-  --color-tint-mint: #eff7e9;
+  --color-tint-mint: #e8f3ea;
   --color-tint-sky: #e4f2fd;
   --color-tint-peach: #fdeee5;
   --color-tint-lilac: #edeafc;
-  --color-tint-butter: #fdf6e3;
+  --color-tint-butter: #f9f1df;
 
   --font-display: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
@@ -37,9 +39,9 @@
   --radius-card: 1rem;
   --radius-panel: 1.25rem;
 
-  --shadow-soft: 0 1px 2px rgba(13, 31, 20, 0.04), 0 10px 30px -18px rgba(13, 31, 20, 0.18);
-  --shadow-lift: 0 2px 6px rgba(13, 31, 20, 0.04), 0 24px 48px -24px rgba(13, 31, 20, 0.24);
-  --shadow-ring: 0 0 0 1px rgba(13, 31, 20, 0.06);
+  --shadow-soft: 0 1px 2px rgba(36, 36, 36, 0.04), 0 10px 30px -18px rgba(36, 36, 36, 0.18);
+  --shadow-lift: 0 2px 6px rgba(36, 36, 36, 0.04), 0 24px 48px -24px rgba(36, 36, 36, 0.24);
+  --shadow-ring: 0 0 0 1px rgba(36, 36, 36, 0.06);
 
   --animate-fade-up: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-shimmer: shimmer 1.6s linear infinite;
@@ -158,7 +160,7 @@
     border-color 0.15s ease,
     box-shadow 0.15s ease;
   &::placeholder {
-    color: #93a198;
+    color: #9b948c;
   }
   &:focus {
     outline: none;

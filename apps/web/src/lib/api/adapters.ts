@@ -20,6 +20,7 @@ const CATEGORY_TINTS: Record<string, Category["tint"]> = {
   scooter: "mint",
   motorcycle: "peach",
   car: "sky",
+  van: "lilac",
 };
 
 const FEATURES: Record<VehicleCategory, string[]> = {
@@ -41,13 +42,20 @@ const FEATURES: Record<VehicleCategory, string[]> = {
     "24/7 roadside support",
     "Clean, sanitised cabin",
   ],
+  van: [
+    "Doorstep delivery",
+    "Comprehensive insurance",
+    "24/7 roadside support",
+    "Generous luggage bay",
+  ],
 };
 
 const SUV_HINTS = ["thar", "nexon", "suv", "creta", "seltos", "xuv", "hector"];
 const SEDAN_HINTS = ["city", "verna", "sedan", "dzire", "amaze", "ciaz"];
 
 function categoryOf(value: string): VehicleCategory {
-  if (value === "car" || value === "motorcycle" || value === "scooter") return value;
+  if (value === "car" || value === "motorcycle" || value === "scooter" || value === "van")
+    return value;
   return "scooter";
 }
 
@@ -56,6 +64,16 @@ function carBody(name: string): Vehicle["body"] {
   if (SUV_HINTS.some((hint) => lowered.includes(hint))) return "suv";
   if (SEDAN_HINTS.some((hint) => lowered.includes(hint))) return "sedan";
   return "hatchback";
+}
+
+const MINIBUS_HINTS = ["traveller", "tempo", "minibus", "force", "urbania"];
+const CARGO_HINTS = ["eeco", "omni", "cargo", "magic", "super carry"];
+
+function vanBody(name: string): Vehicle["body"] {
+  const lowered = name.toLowerCase();
+  if (MINIBUS_HINTS.some((hint) => lowered.includes(hint))) return "minibus";
+  if (CARGO_HINTS.some((hint) => lowered.includes(hint))) return "cargo";
+  return "people-mover";
 }
 
 function fuelOf(value: string): Vehicle["fuel"] {
@@ -92,7 +110,11 @@ export function toVehicle(vehicle: ApiVehicle): Vehicle {
     name: vehicle.name,
     brand: vehicle.brand,
     category,
-    ...(category === "car" ? { body: carBody(vehicle.name) } : {}),
+    ...(category === "car"
+      ? { body: carBody(vehicle.name) }
+      : category === "van"
+        ? { body: vanBody(vehicle.name) }
+        : {}),
     transmission: vehicle.transmission === "AUTOMATIC" ? "Automatic" : "Manual",
     fuel: fuelOf(vehicle.fuelType),
     seats: vehicle.seats,
@@ -117,6 +139,12 @@ export function toVehicle(vehicle: ApiVehicle): Vehicle {
       },
       { label: "Fuel", value: fuelOf(vehicle.fuelType) },
       { label: "Seats", value: String(vehicle.seats) },
+      ...(vehicle.luggageCapacity !== null && vehicle.luggageCapacity !== undefined
+        ? [{ label: "Luggage", value: `${vehicle.luggageCapacity} bags` }]
+        : []),
+      ...(vehicle.ac !== null && vehicle.ac !== undefined
+        ? [{ label: "AC", value: vehicle.ac ? "Yes" : "No" }]
+        : []),
       { label: "Year", value: String(vehicle.year) },
     ],
     mileageLimit:
@@ -137,7 +165,12 @@ export function toCategory(category: ApiCategory): Category {
     description: category.description,
     count: category.vehicleCount,
     from: category.fromPrice,
-    href: category.slug === "car" ? "/cars" : "/bikes-scooters",
+    href:
+      category.slug === "car"
+        ? "/cars"
+        : category.slug === "van"
+          ? "/vans"
+          : "/bikes-scooters",
     ...(category.imageUrl ? { image: category.imageUrl } : {}),
     tint: CATEGORY_TINTS[category.slug] ?? "mint",
   };

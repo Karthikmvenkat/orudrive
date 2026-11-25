@@ -1,5 +1,7 @@
+import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
+import { PageHeader } from '@/components/kit';
 import { ThemedText } from '@/components/themed-text';
 import { Badge, Button, Card, Screen, StateView } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
@@ -11,6 +13,7 @@ import { useAsyncList } from '@/lib/use-async';
 
 export default function NotificationsScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const inbox = useAsyncList<ApiNotification>(async () => {
     const page = await notificationApi.list({ limit: 50 });
     return page.items;
@@ -19,6 +22,11 @@ export default function NotificationsScreen() {
   if (inbox.status === 'loading') {
     return (
       <Screen tabBarSpace={false}>
+        <PageHeader
+          title="Notifications"
+          subtitle="Booking updates and reminders"
+          onBack={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
+        />
         <StateView state="loading" />
       </Screen>
     );
@@ -27,6 +35,11 @@ export default function NotificationsScreen() {
   if (inbox.status === 'error') {
     return (
       <Screen tabBarSpace={false}>
+        <PageHeader
+          title="Notifications"
+          subtitle="Booking updates and reminders"
+          onBack={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
+        />
         <StateView state="error" message={inbox.error} onRetry={inbox.reload} />
       </Screen>
     );
@@ -42,6 +55,11 @@ export default function NotificationsScreen() {
 
   return (
     <Screen tabBarSpace={false}>
+      <PageHeader
+        title="Notifications"
+        subtitle="Booking updates and reminders"
+        onBack={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
+      />
       <View style={styles.head}>
         <ThemedText type="subtitle">
           {unread.length > 0 ? `${unread.length} unread` : 'All caught up'}
